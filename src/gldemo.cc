@@ -318,6 +318,45 @@ static void lv_render(lv_app* app, float w, float h, float r)
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
+static void image_set_alpha(uchar* image, int w, int h, int stride, uchar a)
+{
+    int x, y;
+    for (y = 0; y < h; y++) {
+        uchar* row = &image[y*stride];
+        for (x = 0; x < w; x++)
+            row[x*4+3] = a;
+    }
+}
+
+static void image_flip_horiz(uchar* image, int w, int h, int stride)
+{
+    int i = 0, j = h-1, k;
+    while (i < j) {
+        uchar* ri = &image[i * stride];
+        uchar* rj = &image[j * stride];
+        for (k = 0; k < w*4; k++) {
+            uchar t = ri[k];
+            ri[k] = rj[k];
+            rj[k] = t;
+        }
+        i++;
+        j--;
+    }
+}
+
+static void lv_save_screenshot(int w, int h, const char* filename)
+{
+    uchar* image = (uchar*)malloc(w*h*4);
+    if (image == NULL) return;
+    glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, image);
+    image_set_alpha(image, w, h, w*4, 255);
+    image_flip_horiz(image, w, h, w*4);
+#ifdef STB_IMAGE_WRITE_IMPLEMENTATION
+    stbi_write_png(filename, w, h, 4, image, w*4);
+#endif
+    free(image);
+}
+
 static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     NVG_NOTUSED(scancode);
@@ -339,6 +378,12 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
     case GLFW_KEY_S: ctx->rotation[0] -= 5.f; break;
     case GLFW_KEY_A: ctx->rotation[1] += 5.f; break;
     case GLFW_KEY_D: ctx->rotation[1] -= 5.f; break;
+    case GLFW_KEY_P: {
+        int fb_width, fb_height;
+        glfwGetFramebufferSize(window, &fb_width, &fb_height);
+        lv_save_screenshot(fb_width, fb_height, "screenshot.png");
+        break;
+    }
     default: return;
     }
 }
@@ -404,45 +449,6 @@ static void cursor_position(GLFWwindow* window, double xpos, double ypos)
             ctx->origin.y = (ctx->origin.y * (zoom / ctx->zoom));
         }
     }
-}
-
-static void image_set_alpha(uchar* image, int w, int h, int stride, uchar a)
-{
-    int x, y;
-    for (y = 0; y < h; y++) {
-        uchar* row = &image[y*stride];
-        for (x = 0; x < w; x++)
-            row[x*4+3] = a;
-    }
-}
-
-static void image_flip_horiz(uchar* image, int w, int h, int stride)
-{
-    int i = 0, j = h-1, k;
-    while (i < j) {
-        uchar* ri = &image[i * stride];
-        uchar* rj = &image[j * stride];
-        for (k = 0; k < w*4; k++) {
-            uchar t = ri[k];
-            ri[k] = rj[k];
-            rj[k] = t;
-        }
-        i++;
-        j--;
-    }
-}
-
-static void lv_save_screenshot(int w, int h, const char* filename)
-{
-    uchar* image = (uchar*)malloc(w*h*4);
-    if (image == NULL) return;
-    glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, image);
-    image_set_alpha(image, w, h, w*4, 255);
-    image_flip_horiz(image, w, h, w*4);
-#ifdef STB_IMAGE_WRITE_IMPLEMENTATION
-    stbi_write_png(filename, w, h, 4, image, w*4);
-#endif
-    free(image);
 }
 
 static void lv_main_loop(GLFWwindow* window, lv_app *ctx)
