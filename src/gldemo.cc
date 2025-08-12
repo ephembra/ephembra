@@ -65,6 +65,8 @@ struct lv_app
     lv_context* ctx_nanovg;
     lv_context* ctx_buffer;
     lv_context* ctx_xform;
+    mat4x4 m_mvp;
+    mat4x4 m_inv;
     vec3 rotation;
     vec2f mouse;
     vec2f origin;
@@ -94,6 +96,7 @@ struct lv_oid
 static const char* ephembra_data_file = "build/data/DE440Coeff.bin";
 static const char* ephembra_font_file = "build/fonts/DejaVuSansMono.ttf";
 static const float min_zoom = 2.0f, max_zoom = 2048.0f;
+static const float global_scale = 1e12;
 
 static int opt_help;
 static int opt_width = 1280;
@@ -223,11 +226,13 @@ static void lv_planet(lv_app *app, lv_context* ctx, size_t oid,
         float alpha = (float)(steps-1-i) / steps;
         lv_vg_begin_path(ctx);
         double *o = app->eph + oid * steps * 3 +  i * 3;
+        if (o[0] != o[0]) continue;
         lv_vg_3d_move_to(ctx,
             lv_point_3d(o[0]*s, o[1]*s, o[2]*s)
         );
         for (size_t j = i + 1; j <= i + edges && j < steps; j++) {
             double *o = app->eph + oid * steps * 3 + j * 3;
+            if (o[0] != o[0]) break;
             lv_vg_3d_line_to(ctx,
                 lv_point_3d(o[0]*s, o[1]*s, o[2]*s)
             );
@@ -242,10 +247,10 @@ static void lv_render(lv_app* app, float w, float h, float r)
     static float a = 0.f;
 
     vec3 rot = { app->rotation[0], app->rotation[1], app->rotation[2] };
-    vec3 scale = { 0.05f, 0.05f, 0.05f };
+    vec3 scale = { 1/global_scale, 1/global_scale, 1/global_scale };
     vec3 trans = { 0.0f, 0.0f, app->zoom };
     vec2f origin = { app->origin.x, app->origin.y };
-    mat4x4 m_model, m_proj, m_final;
+    mat4x4 m_model, m_proj;
     lv_context* ctx;
     int fb_width, fb_height;
     bool cartoon;
@@ -273,17 +278,18 @@ static void lv_render(lv_app* app, float w, float h, float r)
         double r, s;
         if (app->cartoon) {
             r = data[oid].dist / data[ephem_id_Pluto].dist;
-            s = (oid / 9.0) / r / 1e10;
+            s = (oid / 9.0) / r;
         } else { 
-            s = 1.0 / 1e10;
+            s = 1.0;
         }
         lv_planet(app, ctx, oid, s, *data[oid].color);
     }
 
-    model_matrix_transform(m_final, scale, trans, rot, a, r);
+    model_matrix_transform(app->m_mvp, scale, trans, rot, a, r);
+    mat4x4_invert(app->m_inv, app->m_mvp);
 
     ctx = app->ctx_xform;
-    lv_xform_proj_matrix(app->ctx_xform, m_final, 1);
+    lv_xform_proj_matrix(app->ctx_xform, app->m_mvp, 1);
     lv_vg_begin_frame(ctx, w, h, r);
     lv_vg_reset(ctx);
     lv_vg_push(ctx);
@@ -560,7 +566,8 @@ void gllv_app(int argc, char **argv)
     lv_app app;
 
     memset(&app, 0, sizeof(app));
-    app.zoom = 128.0f;
+    app.zoom = 16.0f;
+    app.rotation[0] = 45.0f;
 
     if (!glfwInit()) {
         lv_panic("glfwInit failed\n");
