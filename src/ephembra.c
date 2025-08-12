@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <math.h>
 
 #include "ephembra.h"
 
@@ -229,9 +230,13 @@ size_t de440_find_row(ephem_ctx *ctx, double jd)
 void de440_ephem_obj(ephem_ctx *ctx, double jd, size_t row, size_t oid, 
     double *obj)
 {
-    de440_ephem_body(ctx, jd, row, ephem_idx[oid].start,
-        ephem_idx[oid].addend, ephem_idx[oid].end,
-        ephem_idx[oid].step, ephem_idx[oid].offset, obj);
+    if (row == -1) {
+        obj[0] = NAN; obj[1] = NAN; obj[2] = NAN;
+    } else {
+        de440_ephem_body(ctx, jd, row, ephem_idx[oid].start,
+            ephem_idx[oid].addend, ephem_idx[oid].end,
+            ephem_idx[oid].step, ephem_idx[oid].offset, obj);
+    }
 }
 
 const char* de440_object_name(size_t oid)
