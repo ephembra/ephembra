@@ -298,6 +298,54 @@ lv_color lv_hsv_to_rgb(lv_color c)
     return r;
 }
 
+static void object_to_screen(vec2 r, vec4 p, mat4x4 matrix,
+    int width, int height)
+{
+    vec4 q;
+
+    mat4x4_mul_vec4(q, matrix, p);
+
+    q[0] /= q[3];
+    q[1] /= q[3];
+    q[2] /= q[3];
+
+    r[0] = (q[0] * 0.5f + 0.5f) * width;
+    r[1] = (q[1] * 0.5f + 0.5f) * height;
+}
+
+static void screen_to_object(vec3 r, float x, float y, float z,
+    mat4x4 invmatrix, int width, int height)
+{
+    vec4 b, a = {
+        (x / width) * 2.0f - 1.0f, (y / height) * 2.0f - 1.0f, z, 1.0f
+    };
+
+    mat4x4_mul_vec4(b, invmatrix, a);
+
+    r[0] = b[0] / b[3];
+    r[1] = b[1] / b[3];
+    r[2] = b[2] / b[3];
+}
+
+static inline float clampf(float x, float min_val, float max_val)
+{
+    return fminf(fmaxf(x, min_val), max_val);
+}
+
+static inline float vec2_dist_point_line(vec2 p, vec2 a, vec2 b)
+{
+    float dx = b[0] - a[0];
+    float dy = b[1] - a[1];
+    float l2 = dx * dx + dy * dy;
+    float k2 = (p[0] - a[0]) * dx + (p[1] - a[1]) * dy;
+    float t = clampf(k2 / (l2 + FLT_EPSILON), 0.0, 1.0);
+    float cx = a[0] + t * dx;
+    float cy = a[1] + t * dy;
+    float dcx = p[0] - cx;
+    float dcy = p[1] - cy;
+    return sqrtf(dcx * dcx + dcy * dcy);
+}
+
 static lv_color lv_color_adjust(lv_color c, float t_bright, float t_saturate)
 {
     lv_color h;
@@ -317,31 +365,62 @@ static inline lv_color lv_oid_color(lv_app* app, size_t oid, float alpha)
     }
 }
 
-static void lv_planet(lv_app *app, lv_context* ctx, size_t oid)
+static void lv_planet_3d(lv_app *app, lv_context* ctx, size_t oid,
+    float w, float h)
 {
     size_t steps = app->steps, edges = app->steps / app->divs;
     float s = lv_oid_scale(app, oid);
+    lv_color color;
+    double *o;
 
     lv_vg_stroke_width(ctx, 6.0f);
     for (size_t i = 0; i < steps + 1; i += edges) {
         float alpha = (float)(steps-1-i) / steps;
         lv_vg_begin_path(ctx);
-        double *o = app->eph + oid * steps * 3 +  (i % steps) * 3;
+        o = app->eph + oid * steps * 3 +  (i % steps) * 3;
         if (o[0] != o[0]) continue;
         lv_vg_3d_move_to(ctx,
             lv_point_3d(o[0]*s, o[1]*s, o[2]*s)
         );
         for (size_t j = i + 1; j <= i + edges && j < steps + 1; j++) {
-            double *o = app->eph + oid * steps * 3 + (j % steps) * 3;
+            o = app->eph + oid * steps * 3 + (j % steps) * 3;
             if (o[0] != o[0]) break;
             lv_vg_3d_line_to(ctx,
                 lv_point_3d(o[0]*s, o[1]*s, o[2]*s)
             );
         }
-        lv_color color = lv_oid_color(app, oid, alpha);
+        color = lv_oid_color(app, oid, alpha);
         lv_vg_stroke_color(ctx, color);
         lv_vg_stroke(ctx);
     }
+}
+
+static void lv_planet_2d(lv_app *app, lv_context* ctx, size_t oid,
+    float w, float h)
+{
+    double *o;
+    float s;
+    lv_color color;
+    NVGcontext* vg;
+    NVGcolor vgc;
+    vec4 q, p;
+
+    o = app->eph + oid * app->steps * 3;
+    s = lv_oid_scale(app, oid);
+    p[0] = (float)o[0] * s;
+    p[1] = (float)o[1] * s;
+    p[2] = (float)o[2] * s;
+    p[3] = 1.0f;
+    object_to_screen(q, p, app->m_mvp, w, h);
+
+    vg = *(NVGcontext**)app->ctx_nanovg->priv;
+    color = lv_oid_color(app, oid, 1.0f);
+    memcpy(&vgc, &color, sizeof(vgc));
+
+    nvgBeginPath(vg);
+    nvgCircle(vg, q[0], q[1], 18.0f);
+    nvgFillColor(vg, vgc);
+    nvgFill(vg);
 }
 
 static void lv_render(lv_app* app, float w, float h, float r)
@@ -373,7 +452,7 @@ static void lv_render(lv_app* app, float w, float h, float r)
     lv_buffer_vg_clear(ctx);
 
     for (size_t oid = 1; oid < 10; oid++) {
-        lv_planet(app, ctx, oid);
+        lv_planet_3d(app, ctx, oid, w, h);
     }
 
     model_matrix_transform(app->m_mvp, scale, trans, rot, a, r);
@@ -386,6 +465,11 @@ static void lv_render(lv_app* app, float w, float h, float r)
     lv_vg_push(ctx);
     lv_buffer_vg_playback(app->ctx_buffer, ctx);
     lv_vg_pop(ctx);
+
+    for (size_t oid = 1; oid < 10; oid++) {
+        lv_planet_2d(app, ctx, oid, w, h);
+    }
+
     lv_vg_end_frame(ctx);
 }
 
@@ -422,39 +506,6 @@ static void lv_imgui(lv_app* app, float w, float h, float r)
     ImGui::Render();
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
-
-static void screen_to_object(vec3 r, float x, float y, float z,
-    mat4x4 invmatrix, int width, int height)
-{
-    vec4 b, a = {
-        (x / width) * 2.0f - 1.0f, (y / height) * 2.0f - 1.0f, z, 1.0f
-    };
-
-    mat4x4_mul_vec4(b, invmatrix, a);
-
-    r[0] = b[0] / b[3];
-    r[1] = b[1] / b[3];
-    r[2] = b[2] / b[3];
-}
-
-static inline float clampf(float x, float min_val, float max_val)
-{
-    return fminf(fmaxf(x, min_val), max_val);
-}
-
-static inline float vec2_dist_point_line(vec2 p, vec2 a, vec2 b)
-{
-    float dx = b[0] - a[0];
-    float dy = b[1] - a[1];
-    float l2 = dx * dx + dy * dy;
-    float k2 = (p[0] - a[0]) * dx + (p[1] - a[1]) * dy;
-    float t = clampf(k2 / (l2 + FLT_EPSILON), 0.0, 1.0);
-    float cx = a[0] + t * dx;
-    float cy = a[1] + t * dy;
-    float dcx = p[0] - cx;
-    float dcy = p[1] - cy;
-    return sqrtf(dcx * dcx + dcy * dcy);
 }
 
 static int mouse_find_oid(lv_app *app, vec2f pos,
