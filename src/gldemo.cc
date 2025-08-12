@@ -537,7 +537,7 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
     NVG_NOTUSED(scancode);
     NVG_NOTUSED(mods);
 
-    lv_app *ctx = (lv_app*)glfwGetWindowUserPointer(window);
+    lv_app *app = (lv_app*)glfwGetWindowUserPointer(window);
 
     if(action == GLFW_RELEASE) return;
 
@@ -547,12 +547,12 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
         break;
-    case GLFW_KEY_Z: ctx->rotation[2] += 5.f; break;
-    case GLFW_KEY_C: ctx->rotation[2] -= 5.f; break;
-    case GLFW_KEY_W: ctx->rotation[0] += 5.f; break;
-    case GLFW_KEY_S: ctx->rotation[0] -= 5.f; break;
-    case GLFW_KEY_A: ctx->rotation[1] += 5.f; break;
-    case GLFW_KEY_D: ctx->rotation[1] -= 5.f; break;
+    case GLFW_KEY_Z: app->rotation[2] += 5.f; break;
+    case GLFW_KEY_C: app->rotation[2] -= 5.f; break;
+    case GLFW_KEY_W: app->rotation[0] += 5.f; break;
+    case GLFW_KEY_S: app->rotation[0] -= 5.f; break;
+    case GLFW_KEY_A: app->rotation[1] += 5.f; break;
+    case GLFW_KEY_D: app->rotation[1] -= 5.f; break;
     case GLFW_KEY_P: {
         int fb_width, fb_height;
         glfwGetFramebufferSize(window, &fb_width, &fb_height);
@@ -565,20 +565,20 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 
 static void scroll(GLFWwindow* window, double xoffset, double yoffset)
 {
-    lv_app *ctx = (lv_app*)glfwGetWindowUserPointer(window);
+    lv_app *app = (lv_app*)glfwGetWindowUserPointer(window);
 
     lv_trace("scroll\n");
 
-    float quantum = ctx->zoom / 16.f;
-    float ratio = 1.f + (float)quantum / (float)ctx->zoom;
-    if (yoffset < 0. && ctx->zoom < max_zoom) {
-        ctx->origin.x *= ratio;
-        ctx->origin.y *= ratio;
-        ctx->zoom += quantum;
-    } else if (yoffset > 0. && ctx->zoom > min_zoom) {
-        ctx->origin.x /= ratio;
-        ctx->origin.y /= ratio;
-        ctx->zoom -= quantum;
+    float quantum = app->zoom / 16.f;
+    float ratio = 1.f + (float)quantum / (float)app->zoom;
+    if (yoffset < 0. && app->zoom < max_zoom) {
+        app->origin.x *= ratio;
+        app->origin.y *= ratio;
+        app->zoom += quantum;
+    } else if (yoffset > 0. && app->zoom > min_zoom) {
+        app->origin.x /= ratio;
+        app->origin.y /= ratio;
+        app->zoom -= quantum;
     }
 }
 
@@ -587,54 +587,54 @@ static int mouse_right_drag;
 
 static void mouse_button(GLFWwindow* window, int button, int action, int mods)
 {
-    lv_app *ctx = (lv_app*)glfwGetWindowUserPointer(window);
+    lv_app *app = (lv_app*)glfwGetWindowUserPointer(window);
     size_t oid;
     double tjd;
 
     switch (button) {
     case GLFW_MOUSE_BUTTON_LEFT:
         mouse_left_drag = (action == GLFW_PRESS);
-        ctx->last_mouse = ctx->mouse;
-        ctx->last_zoom = ctx->zoom;
-        if (mouse_find_oid(ctx, ctx->mouse, &oid, &tjd)) {
-            ctx->sel_oid = oid;
-            ctx->sel_tjd = tjd;
-            ctx->rot_oid = (action == GLFW_PRESS) ? oid : -1;
-            ctx->rot_tjd = (action == GLFW_PRESS) ? tjd : NAN;
+        app->last_mouse = app->mouse;
+        app->last_zoom = app->zoom;
+        if (mouse_find_oid(app, app->mouse, &oid, &tjd)) {
+            app->sel_oid = oid;
+            app->sel_tjd = tjd;
+            app->rot_oid = (action == GLFW_PRESS) ? oid : -1;
+            app->rot_tjd = (action == GLFW_PRESS) ? tjd : NAN;
         }
         break;
     case GLFW_MOUSE_BUTTON_RIGHT:
         mouse_right_drag = (action == GLFW_PRESS);
-        ctx->last_mouse = ctx->mouse;
-        ctx->last_zoom = ctx->zoom;
+        app->last_mouse = app->mouse;
+        app->last_zoom = app->zoom;
         break;
     }
 }
 
 static void cursor_position(GLFWwindow* window, double xpos, double ypos)
 {
-    lv_app *ctx = (lv_app*)glfwGetWindowUserPointer(window);
+    lv_app *app = (lv_app*)glfwGetWindowUserPointer(window);
 
-    ctx->mouse = (vec2f) { (float)xpos, (float)ypos };
+    app->mouse = (vec2f) { (float)xpos, (float)ypos };
 
     if (mouse_left_drag) {
-        ctx->origin.x += ctx->mouse.x - ctx->last_mouse.x;
-        ctx->origin.y += ctx->mouse.y - ctx->last_mouse.y;
-        ctx->last_mouse = ctx->mouse;
+        app->origin.x += app->mouse.x - app->last_mouse.x;
+        app->origin.y += app->mouse.y - app->last_mouse.y;
+        app->last_mouse = app->mouse;
     }
     if (mouse_right_drag) {
-        float delta0 = ctx->mouse.x - ctx->last_mouse.x;
-        float delta1 = ctx->mouse.y - ctx->last_mouse.y;
-        float zoom = ctx->last_zoom * powf(65.0f/64.0f,(float)-delta1);
-        if (zoom != ctx->zoom && zoom > min_zoom && zoom < max_zoom) {
-            ctx->zoom = zoom;
-            ctx->origin.x = (ctx->origin.x * (zoom / ctx->zoom));
-            ctx->origin.y = (ctx->origin.y * (zoom / ctx->zoom));
+        float delta0 = app->mouse.x - app->last_mouse.x;
+        float delta1 = app->mouse.y - app->last_mouse.y;
+        float zoom = app->last_zoom * powf(65.0f/64.0f,(float)-delta1);
+        if (zoom != app->zoom && zoom > min_zoom && zoom < max_zoom) {
+            app->zoom = zoom;
+            app->origin.x = (app->origin.x * (zoom / app->zoom));
+            app->origin.y = (app->origin.y * (zoom / app->zoom));
         }
     }
 }
 
-static void lv_main_loop(GLFWwindow* window, lv_app *ctx)
+static void lv_main_loop(GLFWwindow* window, lv_app *app)
 {
     double target_fps = 60.0;
     double frame_time = 1.0 / target_fps;
@@ -655,7 +655,7 @@ static void lv_main_loop(GLFWwindow* window, lv_app *ctx)
 
         glViewport(0, 0, fb_width, fb_height);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-        lv_render(ctx, win_width, win_height, win_ratio);
+        lv_render(app, win_width, win_height, win_ratio);
         glfwSwapBuffers(window);
         glfwPollEvents();
 
