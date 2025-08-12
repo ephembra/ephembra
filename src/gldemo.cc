@@ -222,16 +222,16 @@ static void lv_planet(lv_app *app, lv_context* ctx, size_t oid,
     size_t steps = app->steps, edges = app->steps / app->divs;
 
     lv_vg_stroke_width(ctx, 6.0f);
-    for (size_t i = 0; i < steps; i += edges) {
+    for (size_t i = 0; i < steps + 1; i += edges) {
         float alpha = (float)(steps-1-i) / steps;
         lv_vg_begin_path(ctx);
-        double *o = app->eph + oid * steps * 3 +  i * 3;
+        double *o = app->eph + oid * steps * 3 +  (i % steps) * 3;
         if (o[0] != o[0]) continue;
         lv_vg_3d_move_to(ctx,
             lv_point_3d(o[0]*s, o[1]*s, o[2]*s)
         );
-        for (size_t j = i + 1; j <= i + edges && j < steps; j++) {
-            double *o = app->eph + oid * steps * 3 + j * 3;
+        for (size_t j = i + 1; j <= i + edges && j < steps + 1; j++) {
+            double *o = app->eph + oid * steps * 3 + (j % steps) * 3;
             if (o[0] != o[0]) break;
             lv_vg_3d_line_to(ctx,
                 lv_point_3d(o[0]*s, o[1]*s, o[2]*s)
