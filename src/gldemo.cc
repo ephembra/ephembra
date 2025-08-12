@@ -354,10 +354,6 @@ static void lv_render(lv_app* app, float w, float h, float r)
     vec2f origin = { app->origin.x, app->origin.y };
     mat4x4 m_model, m_proj;
     lv_context* ctx;
-    int fb_width, fb_height;
-    bool cartoon;
-    bool rotate;
-    bool loop;
 
     if (app->rotate) {
         a += 1.0f;
@@ -391,6 +387,13 @@ static void lv_render(lv_app* app, float w, float h, float r)
     lv_buffer_vg_playback(app->ctx_buffer, ctx);
     lv_vg_pop(ctx);
     lv_vg_end_frame(ctx);
+}
+
+static void lv_imgui(lv_app* app, float w, float h, float r)
+{
+    bool cartoon;
+    bool rotate;
+    bool loop;
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -400,22 +403,24 @@ static void lv_render(lv_app* app, float w, float h, float r)
     ImGui::SliderInt("Julian Date", &app->cjd, app->sjd, app->ejd);
     ImGui::SliderInt("Fine Adjust", &app->cjdf, app->sjdf, app->ejdf);
     ImGui::PopItemWidth();
+
     cartoon = app->cartoon;
     rotate = app->rotate;
     loop = app->loop;
+
     ImGui::Checkbox("Cartoon", &cartoon);
     ImGui::SameLine();
     ImGui::Checkbox("Rotation", &rotate);
     ImGui::SameLine();
     ImGui::Checkbox("Loop", &loop);
+
     app->cartoon = cartoon;
     app->rotate = rotate;
     app->loop = loop;
+
     ImGui::End();
     ImGui::Render();
 
-    glfwGetFramebufferSize(app->window, &fb_width, &fb_height);
-    glViewport(0, 0, fb_width, fb_height);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
@@ -656,6 +661,7 @@ static void lv_main_loop(GLFWwindow* window, lv_app *app)
         glViewport(0, 0, fb_width, fb_height);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
         lv_render(app, win_width, win_height, win_ratio);
+        lv_imgui(app, win_width, win_height, win_ratio);
         glfwSwapBuffers(window);
         glfwPollEvents();
 
