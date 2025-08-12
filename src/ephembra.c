@@ -200,22 +200,30 @@ static void de440_ephem_body(ephem_ctx *ctx, double jd, size_t row,
     de440_cheb3d(jd, addend, jd0, jd0 + step, Cx, Cy, Cz, r, s);    
 }
 
+static inline int de440_cmp(ephem_ctx *ctx, double jd, size_t row)
+{
+    size_t c = ctx->cols;
+    double *d = ctx->PC + c * row;
+    double jd1 = d[0], jd2 = d[1];
+    if (jd < jd1) return -1;
+    else if (jd > jd2) return 1;
+    else return 0;
+}
+
 size_t de440_find_row(ephem_ctx *ctx, double jd)
 {
     size_t n = ctx->rows;
-    size_t c = ctx->cols;
-    double *d = ctx->PC;
     size_t begin = 0, end = n;
     while (end != 0) {
         size_t half = (end >> 1), probe = begin + half;
-        if (!(jd >= d[probe*c] && jd < d[probe*c+1]) && jd >= d[probe*c+1]) {
+        if (de440_cmp(ctx, jd, probe) > 0) {
             begin = probe + 1;
             end -= half + 1;
         } else {
             end = half;
         }
     }
-    return (jd >= d[begin*c] && jd < d[begin*c+1]) ? begin : -1;
+    return de440_cmp(ctx, jd, begin) == 0 ? begin : -1;
 }
 
 void de440_ephem_obj(ephem_ctx *ctx, double jd, size_t row, size_t oid, 
