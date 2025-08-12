@@ -121,7 +121,7 @@ static lv_oid data[10] = {
     {},
     /* Mercury   */ {   57909227,    87.969, &pink      },
     /* Venus     */ {  108209475,   224.701, &orange    },
-    /* EarthMoon */ {  149598023,   365.256, &white     },
+    /* EarthMoon */ {  149598023,   365.256, &green     },
     /* Mars      */ {  227939200,   686.980, &red       },
     /* Jupiter   */ {  778340821,  4332.589, &olive     },
     /* Saturn    */ { 1426666422, 10759.220, &yellow    },
