@@ -66,8 +66,10 @@ static lv_log_level lv_ll = lv_ll_info;
 struct lv_color {
         union {
                 float rgba[4];
+                float hsva[4];
                 struct {
                         float r,g,b,a;
+                        float h,s,v;
                 };
         };
 };

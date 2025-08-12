@@ -73,6 +73,10 @@ struct lv_app
     float zoom;
     vec2f last_mouse;
     float last_zoom;
+    double rot_tjd;
+    size_t rot_oid;
+    double sel_tjd;
+    size_t sel_oid;
     size_t steps;
     size_t divs;
     int sjd, sjdf;
@@ -130,6 +134,36 @@ static lv_oid data[10] = {
     /* Pluto     */ { 5906376272, 90560.000, &grey      }
 };
 
+static void lv_init_colors()
+{
+    blue = lv_rgb(0x1f,0x77,0xb4);
+    orange = lv_rgb(0xbf,0x5f,0x0e);
+    green = lv_rgb(0x2c,0xa0,0x2c);
+    red = lv_rgb(0xb6,0x27,0x28);
+    purple = lv_rgb(0x94,0x67,0xbd);
+    brown = lv_rgb(0x8c,0x56,0x4b);
+    pink = lv_rgb(0xe3,0x77,0xc2);
+    grey = lv_rgb(0x7f,0x7f,0x7f);
+    olive = lv_rgb(0xbc,0xbd,0x22);
+    turquoise = lv_rgb(0x17,0xbe,0xcf);
+    yellow = lv_rgb(0xbf,0x90,0x00);
+    charcoal = lv_rgb(0x20,0x20,0x20);
+    black = lv_rgb(0x00,0x00,0x00);
+    white = lv_rgb(0xd0,0xd0,0xd0);
+}
+
+static void lv_app_init(lv_app *app)
+{
+    memset(app, 0, sizeof(app));
+    app->zoom = 16.0f;
+    app->rotation[0] = 45.0f;
+    app->rot_oid = -1;
+    app->rot_tjd = NAN;
+    app->sel_oid = -1;
+    app->sel_tjd = NAN;
+    lv_init_colors();
+}
+
 static void lv_vg_uinit(lv_app* app)
 {
     app->ctx_nanovg = (lv_context*)calloc(1, sizeof(lv_context));
@@ -148,24 +182,6 @@ static void lv_vg_udestroy(lv_app* app)
     free(app->ctx_nanovg);
     free(app->ctx_buffer);
     free(app->ctx_xform);
-}
-
-static void lv_init_colors()
-{
-    blue = lv_rgb(0x1f,0x77,0xb4);
-    orange = lv_rgb(0xff,0x7f,0x0e);
-    green = lv_rgb(0x2c,0xa0,0x2c);
-    red = lv_rgb(0xd6,0x27,0x28);
-    purple = lv_rgb(0x94,0x67,0xbd);
-    brown = lv_rgb(0x8c,0x56,0x4b);
-    pink = lv_rgb(0xe3,0x77,0xc2);
-    grey = lv_rgb(0x7f,0x7f,0x7f);
-    olive = lv_rgb(0xbc,0xbd,0x22);
-    turquoise = lv_rgb(0x17,0xbe,0xcf);
-    yellow = lv_rgb(0xff,0xc0,0x00);
-    charcoal = lv_rgb(0x20,0x20,0x20);
-    black = lv_rgb(0x00,0x00,0x00);
-    white = lv_rgb(0xd0,0xd0,0xd0);
 }
 
 static float deg_rad(float a) { return a * M_PI / 180.0f; }
@@ -216,10 +232,95 @@ static void lv_ephem_calc(lv_app *app, double jd)
     }
 }
 
-static void lv_planet(lv_app *app, lv_context* ctx, size_t oid,
-    float s, lv_color color)
+static inline double lv_oid_scale(lv_app* app, size_t oid)
+{
+    double r = (data[oid].dist / data[ephem_id_Pluto].dist);
+    return app->cartoon ? (oid / 9.0) / r : 1.0;
+}
+
+lv_color lv_rgb_to_hsv(lv_color c)
+{
+    lv_color r;
+
+    float max = fmaxf(c.r, fmaxf(c.g, c.b));
+    float min = fminf(c.r, fminf(c.g, c.b));
+    float delta = max - min;
+
+    r.v = max;
+    r.a = c.a;
+
+    r.s = delta / (max + FLT_EPSILON);
+
+    if (max == c.r) {
+        r.h = 60.0f * fmodf(((c.g - c.b) / (delta + FLT_EPSILON)), 6.0f);
+    } else if (max == c.g) {
+        r.h = 60.0f * (((c.b - c.r) / (delta + FLT_EPSILON)) + 2.0f);
+    } else {
+        r.h = 60.0f * (((c.r - c.g) / (delta + FLT_EPSILON)) + 4.0f);
+    }
+
+    if (r.h < 0.0f) {
+        r.h += 360.0f;
+    }
+
+    return r;
+}
+
+lv_color lv_hsv_to_rgb(lv_color c)
+{
+    lv_color r;
+
+    float vs = c.v * c.s;
+    float x = vs * (1.0f - fabsf(fmodf(c.h / 60.0f, 2.0f) - 1.0f));
+    float m = c.v - vs;
+
+    float rp, gp, bp;
+
+    if (c.h < 60.0f) {
+        rp = vs; gp = x; bp = 0.0f;
+    } else if (c.h < 120.0f) {
+        rp = x; gp = vs; bp = 0.0f;
+    } else if (c.h < 180.0f) {
+        rp = 0.0f; gp = vs; bp = x;
+    } else if (c.h < 240.0f) {
+        rp = 0.0f; gp = x; bp = vs;
+    } else if (c.h < 300.0f) {
+        rp = x; gp = 0.0f; bp = vs;
+    } else {
+        rp = vs; gp = 0.0f; bp = x;
+    }
+
+    r.r = rp + m;
+    r.g = gp + m;
+    r.b = bp + m;
+    r.a = c.a;
+
+    return r;
+}
+
+static lv_color lv_color_adjust(lv_color c, float t_bright, float t_saturate)
+{
+    lv_color h;
+    h = lv_rgb_to_hsv(c);
+    h.v = fminf(fmaxf(h.v * t_bright, 0.0f), 1.0f);
+    h.s = fminf(fmaxf(h.s * t_saturate, 0.0f), 1.0f);
+    return lv_hsv_to_rgb(h);
+}
+
+static inline lv_color lv_oid_color(lv_app* app, size_t oid, float alpha)
+{
+    lv_color color = lv_color_af(*data[oid].color, alpha);
+    if (oid == app->rot_oid) {
+        return lv_color_adjust(color, 1.5, 1.5);
+    } else {
+        return color;
+    }
+}
+
+static void lv_planet(lv_app *app, lv_context* ctx, size_t oid)
 {
     size_t steps = app->steps, edges = app->steps / app->divs;
+    float s = lv_oid_scale(app, oid);
 
     lv_vg_stroke_width(ctx, 6.0f);
     for (size_t i = 0; i < steps + 1; i += edges) {
@@ -237,7 +338,8 @@ static void lv_planet(lv_app *app, lv_context* ctx, size_t oid,
                 lv_point_3d(o[0]*s, o[1]*s, o[2]*s)
             );
         }
-        lv_vg_stroke_color(ctx, lv_color_af(color, alpha));
+        lv_color color = lv_oid_color(app, oid, alpha);
+        lv_vg_stroke_color(ctx, color);
         lv_vg_stroke(ctx);
     }
 }
@@ -275,14 +377,7 @@ static void lv_render(lv_app* app, float w, float h, float r)
     lv_buffer_vg_clear(ctx);
 
     for (size_t oid = 1; oid < 10; oid++) {
-        double r, s;
-        if (app->cartoon) {
-            r = data[oid].dist / data[ephem_id_Pluto].dist;
-            s = (oid / 9.0) / r;
-        } else { 
-            s = 1.0;
-        }
-        lv_planet(app, ctx, oid, s, *data[oid].color);
+        lv_planet(app, ctx, oid);
     }
 
     model_matrix_transform(app->m_mvp, scale, trans, rot, a, r);
@@ -322,6 +417,80 @@ static void lv_render(lv_app* app, float w, float h, float r)
     glfwGetFramebufferSize(app->window, &fb_width, &fb_height);
     glViewport(0, 0, fb_width, fb_height);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+static void screen_to_object(vec3 r, float x, float y, float z,
+    mat4x4 invmatrix, int width, int height)
+{
+    vec4 b, a = {
+        (x / width) * 2.0f - 1.0f, (y / height) * 2.0f - 1.0f, z, 1.0f
+    };
+
+    mat4x4_mul_vec4(b, invmatrix, a);
+
+    r[0] = b[0] / b[3];
+    r[1] = b[1] / b[3];
+    r[2] = b[2] / b[3];
+}
+
+static inline float clampf(float x, float min_val, float max_val)
+{
+    return fminf(fmaxf(x, min_val), max_val);
+}
+
+static inline float vec2_dist_point_line(vec2 p, vec2 a, vec2 b)
+{
+    float dx = b[0] - a[0];
+    float dy = b[1] - a[1];
+    float l2 = dx * dx + dy * dy;
+    float k2 = (p[0] - a[0]) * dx + (p[1] - a[1]) * dy;
+    float t = clampf(k2 / (l2 + FLT_EPSILON), 0.0, 1.0);
+    float cx = a[0] + t * dx;
+    float cy = a[1] + t * dy;
+    float dcx = p[0] - cx;
+    float dcy = p[1] - cy;
+    return sqrtf(dcx * dcx + dcy * dcy);
+}
+
+static int mouse_find_oid(lv_app *app, vec2f pos,
+    size_t *sel_oid, double *sel_tjd)
+{
+    int win_width, win_height;
+    size_t steps = app->steps;
+    double jd = app->cjd + app->cjdf;
+    double epsilon = global_scale / 12;
+    vec3 near, far;
+
+    glfwGetWindowSize(app->window, &win_width, &win_height);
+    screen_to_object(near, pos.x, pos.y, 0, app->m_inv, win_width, win_height);
+    screen_to_object(far, pos.x, pos.y, 1, app->m_inv, win_width, win_height);
+
+    for (size_t oid = 1; oid < 10; oid++) {
+        double s = lv_oid_scale(app, oid);
+        for (size_t i = 0; i < steps - 1; i++) {
+            double interval = data[oid].orbit / steps;
+            double tjd = jd - (i * interval);
+            double *o1 = app->eph + oid * steps * 3 + i * 3;
+            double *o2 = o1 + 3;
+            float z = (float)(o1[2] + o2[2]) * 0.5f * s;
+            float t = (z - near[2]) / (far[2] - near[2]);
+            float px = far[0] * t + near[0] * (1.0f - t);
+            float py = far[1] * t + near[1] * (1.0f - t);
+            vec2 p = { px, py };
+            vec2 a = { (float)(o1[0] * s), (float)(o1[1] * s) };
+            vec2 b = { (float)(o2[0] * s), (float)(o2[1] * s) };
+            float d = vec2_dist_point_line(p, a, b);
+            if (d < epsilon) {
+                *sel_oid = oid;
+                *sel_tjd = tjd;
+                return 1;
+            }
+        }
+    }
+
+    *sel_oid = -1;
+    *sel_tjd = NAN;
+    return 0;
 }
 
 static void image_set_alpha(uchar* image, int w, int h, int stride, uchar a)
@@ -419,12 +588,20 @@ static int mouse_right_drag;
 static void mouse_button(GLFWwindow* window, int button, int action, int mods)
 {
     lv_app *ctx = (lv_app*)glfwGetWindowUserPointer(window);
+    size_t oid;
+    double tjd;
 
     switch (button) {
     case GLFW_MOUSE_BUTTON_LEFT:
         mouse_left_drag = (action == GLFW_PRESS);
         ctx->last_mouse = ctx->mouse;
         ctx->last_zoom = ctx->zoom;
+        if (mouse_find_oid(ctx, ctx->mouse, &oid, &tjd)) {
+            ctx->sel_oid = oid;
+            ctx->sel_tjd = tjd;
+            ctx->rot_oid = (action == GLFW_PRESS) ? oid : -1;
+            ctx->rot_tjd = (action == GLFW_PRESS) ? tjd : NAN;
+        }
         break;
     case GLFW_MOUSE_BUTTON_RIGHT:
         mouse_right_drag = (action == GLFW_PRESS);
@@ -565,10 +742,6 @@ void gllv_app(int argc, char **argv)
     GLFWwindow* window;
     lv_app app;
 
-    memset(&app, 0, sizeof(app));
-    app.zoom = 16.0f;
-    app.rotation[0] = 45.0f;
-
     if (!glfwInit()) {
         lv_panic("glfwInit failed\n");
     }
@@ -578,6 +751,8 @@ void gllv_app(int argc, char **argv)
     glfwWindowHint(GLFW_SCALE_TO_MONITOR , GL_TRUE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+
+    lv_app_init(&app);
 
     app.window = window = glfwCreateWindow(opt_width, opt_height,
         "ephembra", NULL, NULL);
@@ -616,7 +791,6 @@ void gllv_app(int argc, char **argv)
 
     lv_ephem_init(&app, 360, 36, 2323710.5, 2615904.5);
 
-    lv_init_colors();
     lv_vg_uinit(&app);
     lv_main_loop(window, &app);
     lv_vg_udestroy(&app);
