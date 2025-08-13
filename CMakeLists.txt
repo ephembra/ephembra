@@ -133,19 +133,28 @@ add_custom_command(OUTPUT ${ephembra_data_file}
     COMMAND ${PROJECT_SOURCE_DIR}/scripts/fetch.py
     ARGS ${ephembra_data_url} ${ephembra_data_file})
 
-string(CONCAT ephembra_font_url
+string(CONCAT ephembra_mono_url
     "https://mirrors.ibiblio.org/CTAN/fonts/dejavu/truetype/"
     "DejaVuSansMono.ttf")
-set(ephembra_font_file ${PROJECT_BINARY_DIR}/fonts/DejaVuSansMono.ttf)
-add_custom_command(OUTPUT ${ephembra_font_file}
+set(ephembra_mono_font ${PROJECT_BINARY_DIR}/fonts/DejaVuSansMono.ttf)
+add_custom_command(OUTPUT ${ephembra_mono_font}
     COMMAND ${PROJECT_SOURCE_DIR}/scripts/fetch.py
-    ARGS ${ephembra_font_url} ${ephembra_font_file})
+    ARGS ${ephembra_mono_url} ${ephembra_mono_font})
+
+string(CONCAT ephembra_sans_url
+    "https://mirrors.ibiblio.org/CTAN/fonts/dejavu/truetype/"
+    "DejaVuSans.ttf")
+set(ephembra_sans_font ${PROJECT_BINARY_DIR}/fonts/DejaVuSans.ttf)
+add_custom_command(OUTPUT ${ephembra_sans_font}
+    COMMAND ${PROJECT_SOURCE_DIR}/scripts/fetch.py
+    ARGS ${ephembra_sans_url} ${ephembra_sans_font})
 
 add_subdirectory(third_party/matio)
 include_directories(third_party/matio/src)
 
 include_directories(third_party/nanovg/src)
 add_library(nanovg STATIC third_party/nanovg/src/nanovg.c)
+target_compile_definitions(nanovg PRIVATE FONS_USE_FREETYPE)
 
 include_directories(third_party/stb)
 
@@ -166,7 +175,7 @@ add_library(imgui STATIC ${IMGUI_SOURCES})
 
 include_directories(include)
 add_library(ephembra src/ephembra.c
-    ${ephembra_data_file} ${ephembra_font_file})
+    ${ephembra_data_file} ${ephembra_mono_font} ${ephembra_sans_font})
 
 add_executable(demo src/demo.c)
 target_link_libraries(demo PRIVATE ephembra)
@@ -174,6 +183,6 @@ target_link_libraries(demo PRIVATE ephembra)
 add_executable(convert src/convert.c)
 target_link_libraries(convert PRIVATE z matio ephembra)
 
-list(APPEND GLFW_LIBS_ALL z matio ephembra nanovg imgui)
+list(APPEND GLFW_LIBS_ALL z matio ephembra nanovg imgui ${FT2_LIBRARIES})
 add_executable(gldemo src/gldemo.cc)
 gl_cprogram(gldemo)
