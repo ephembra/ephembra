@@ -62,6 +62,11 @@ typedef struct lv_app lv_app;
 typedef struct lv_oid lv_oid;
 typedef struct lv_oid_idx lv_oid_idx;
 
+struct lv_date
+{
+    int year, month, day;
+};
+
 struct lv_app
 {
     GLFWwindow* window;
@@ -86,9 +91,10 @@ struct lv_app
     int ejd, ejdf;
     int cjd, cjdf;
     int ljd, ljdf;
+    double jd;
+    lv_date date;
     int cartoon;
-    int rotate;
-    int loop;
+    int playback;
     double *eph;
     int *images;
     int font;
@@ -182,41 +188,104 @@ static void lv_vg_udestroy(lv_app* app)
 static float deg_rad(float a) { return a * M_PI / 180.0f; }
 
 static void model_matrix_transform(mat4x4 m, vec3 scale, vec3 trans,
-    vec3 rot, float a, float r)
+    vec3 rot, float r)
 {
     mat4x4 m_model, m_proj;
     mat4x4_identity(m_model);
     mat4x4_translate_in_place(m_model, trans[0], trans[1], trans[2]);
     mat4x4_scale_aniso(m_model, m_model, scale[0], scale[1], scale[2]);
     mat4x4_rotate_X(m_model, m_model, deg_rad(rot[0]));
-    mat4x4_rotate_Y(m_model, m_model, deg_rad(rot[1]) + deg_rad(a));
+    mat4x4_rotate_Y(m_model, m_model, deg_rad(rot[1]));
     mat4x4_rotate_Z(m_model, m_model, deg_rad(rot[2]));
     mat4x4_perspective(m_proj, deg_rad(30.f), r, 1.f, 1e6f);
     mat4x4_mul(m, m_proj, m_model);
 }
 
-static void lv_ephem_init(lv_app *app, size_t steps, size_t divs,
-    double sjd, double ejd)
+static double lv_date_to_julian(lv_date d)
+{
+    int Y = d.year;
+    int M = d.month;
+    int D = d.day;
+
+    if (M <= 2) {
+        Y -= 1;
+        M += 12;
+    }
+
+    int A = Y / 100;
+    int B = 2 - A + (A / 4);
+
+    double JD = floor(365.25 * (Y + 4716))
+              + floor(30.6001 * (M + 1))
+              + D + B - 1524.5;
+
+    return fabs(JD);
+}
+
+static lv_date lv_julian_to_date(double jd)
+{
+    jd = fabs(jd + 0.5);
+
+    long Z = (long)floor(jd);
+    double F = jd - Z;
+
+    long alpha = (long)((Z - 1867216.25) / 36524.25);
+    long A = Z + 1 + alpha - alpha / 4;
+
+    long B = A + 1524;
+    long C = (long)((B - 122.1) / 365.25);
+    long D = (long)(365.25 * C);
+    long E = (long)((B - D) / 30.6001);
+
+    double day = B - D - (long)(30.6001 * E) + F;
+    int month = (E < 14) ? E - 1 : E - 13;
+    int year  = (month > 2) ? C - 4716 : C - 4715;
+
+    lv_date d = {
+        year,
+        month,
+        (int)floor(day),
+    };
+
+    return d;
+}
+
+static int lv_days_in_month(int year, int month)
+{
+    static const int dim[12] = { 31,28,31,30,31,30,31,31,30,31,30,31 };
+    if (month == 1 && (year%4==0 && (year%100!=0 || year%400==0))) {
+        return 29;
+    }
+    return dim[month];
+}
+
+static void lv_update_date(lv_app *app)
+{
+    app->jd = app->cjd + app->cjdf + 0.5;
+    app->date = lv_julian_to_date(app->jd);
+}
+
+static void lv_ephem_init(lv_app *app)
 {
     NVGcontext *vg;
-
-    app->steps = steps;
-    app->divs = divs;
-    app->cjd = sjd + (ejd - sjd) / 2.0;
-    app->sjd = sjd;
-    app->ejd = ejd;
-    app->cjdf = 0.0;
-    app->sjdf = -500.0;
-    app->ejdf = 500.0;
+    app->steps = 360;
+    app->divs = 36;
+    app->sjd = 2341972 + 500; /* 1-JAN-1700 */
+    app->ejd = 2597640 - 500; /* 31-DEC-2399 */
+    app->sjdf = -500;
+    app->ejdf = 500;
+    app->cjd = app->sjd + (app->ejd - app->sjd) / 2;
+    app->cjdf = 0;
     app->cartoon = 1;
-    app->rotate = 0;
-    app->loop = 0;
+    app->playback = 0;
+
+    lv_update_date(app);
 
     de440_create_ephem(&app->ctx, ephembra_data_file);
 
     vg = *(NVGcontext**)app->ctx_nanovg->priv;
 
-    app->eph = (double*)malloc(countof(data) * steps * sizeof(double) * 3);
+    app->eph = (double*)malloc(countof(data) * app->steps * sizeof(double) * 3);
     app->images = (int*)malloc(countof(data) * sizeof(int));
     nvgCreateFont(vg, "mono", ephembra_mono_font);
     nvgCreateFont(vg, "sans", ephembra_sans_font);
@@ -499,8 +568,6 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
 
 static void lv_render(lv_app* app, float w, float h, float r)
 {
-    static float a = 0.f;
-
     vec3 rot = { app->rotation[0], app->rotation[1], app->rotation[2] };
     vec3 scale = { 1/global_scale, 1/global_scale, 1/global_scale };
     vec3 trans = { 0.0f, 0.0f, app->zoom };
@@ -509,16 +576,34 @@ static void lv_render(lv_app* app, float w, float h, float r)
     lv_context* ctx;
     float g;
 
-    if (app->rotate) {
-        a += 1.0f;
-    }
-
-    if (app->loop) {
-        if (++app->cjdf > app->ejdf) app->cjdf = app->sjdf;
+    if (app->playback) {
+        if (++app->cjdf > app->ejdf) {
+            if (app->cjd + app->cjdf >= app->ejd) {
+                app->playback = 0;
+            } else {
+                app->cjd += (app->ejdf - app->sjdf) + 1;
+                app->cjdf = app->sjdf;
+            }
+        }
+    } else {
+        double njd = lv_date_to_julian(app->date);
+        if (njd != app->cjd + app->cjdf + 0.5) {
+            if (njd - 0.5 < app->sjd) {
+                app->cjd = app->sjd;
+                app->cjdf = njd - 0.5 - app->sjd;
+            } else if (njd - 0.5 > app->ejd) {
+                app->cjd = app->ejd;
+                app->cjdf = njd - 0.5 - app->ejd;
+            } else {
+                app->cjd = njd;
+                app->cjdf = 0;
+            }
+        }
     }
 
     if (app->cjd != app->ljd || app->cjdf != app->ljdf) {
-        lv_ephem_calc(app, app->cjd + app->cjdf);
+        lv_update_date(app);
+        lv_ephem_calc(app, app->jd);
         app->ljd = app->cjd;
         app->ljdf = app->cjdf;
     }
@@ -528,7 +613,7 @@ static void lv_render(lv_app* app, float w, float h, float r)
 
     lv_planets_3d(app, ctx, w, h);
 
-    model_matrix_transform(app->m_mvp, scale, trans, rot, a, r);
+    model_matrix_transform(app->m_mvp, scale, trans, rot, r);
     mat4x4_invert(app->m_inv, app->m_mvp);
 
     ctx = app->ctx_xform;
@@ -544,34 +629,118 @@ static void lv_render(lv_app* app, float w, float h, float r)
     lv_vg_end_frame(ctx);
 }
 
+void lv_date_picker(lv_date *date)
+{
+    int dim;
+
+    ImGui::Text("Date:");
+    ImGui::SameLine();
+    ImGui::PushItemWidth(200);
+    ImGui::InputInt("YYYY", &date->year);
+
+    if (date->year < 1700) {
+        date->year = 1700;
+        date->month = 1;
+        date->day = 1;
+    } else if (date->year > 2399) {
+        date->year = 2399;
+        date->month = 12;
+        date->day = 31;
+    }
+
+    ImGui::PopItemWidth();
+    ImGui::PushItemWidth(150);
+    ImGui::SameLine();
+    ImGui::InputInt("MM", &date->month);
+
+    if (date->month < 1) {
+        date->year--;
+        date->month = 12;
+        if (date->year < 1700) {
+            date->year = 1700;
+            date->month = 1;
+            date->day = 1;
+        }
+    } else if (date->month > 12) {
+        date->year++;
+        date->month = 1;
+        if (date->year > 2399) {
+            date->year = 2399;
+            date->month = 12;
+            date->day = 31;
+        }
+    }
+
+    ImGui::SameLine();
+    ImGui::InputInt("DD", &date->day);
+    ImGui::PopItemWidth();
+
+    dim = lv_days_in_month(date->year, date->month-1);
+    if (date->day < 1) {
+        date->month--;
+        if (date->month < 1) {
+            date->year--;
+            date->month = 12;
+            if (date->year < 1700) {
+                date->year = 1700;
+                date->month = 1;
+                date->day = 1;
+            } else {
+                date->day = lv_days_in_month(date->year, date->month-1);
+            }
+        } else {
+            date->day = lv_days_in_month(date->year, date->month-1);
+        }
+    } else if (date->day > dim) {
+        date->month++;
+        if (date->month > 12) {
+            date->month = 1;
+            date->year++;
+            if (date->year > 2399) {
+                date->year = 2399;
+                date->month = 12;
+                date->day = 31;
+            } else {
+                date->day = 1;
+            }
+        } else {
+            date->day = 1;
+        }
+    }
+}
+
 static void lv_imgui(lv_app* app, float w, float h, float r)
 {
     bool cartoon;
-    bool rotate;
-    bool loop;
+    bool playback;
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
+
     ImGui::NewFrame();
     ImGui::Begin("Controller", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::PushItemWidth(1000.0f);
-    ImGui::SliderInt("Julian Date", &app->cjd, app->sjd, app->ejd);
-    ImGui::SliderInt("Fine Adjust", &app->cjdf, app->sjdf, app->ejdf);
+    if (ImGui::SliderInt("Julian Date", &app->cjd, app->sjd, app->ejd)) {
+        lv_update_date(app);
+    }
+    if (ImGui::SliderInt("Fine Adjust", &app->cjdf, app->sjdf, app->ejdf)) {
+        lv_update_date(app);
+    }
     ImGui::PopItemWidth();
 
+    ImVec2 bs(36, 36);
+    if (ImGui::Button(app->playback  ? "\uf04c##playback"
+                                     : "\uf04b##playback", bs)) {
+        app->playback = !app->playback;
+    }
+
+    ImGui::SameLine();
+    lv_date_picker(&app->date);
+
     cartoon = app->cartoon;
-    rotate = app->rotate;
-    loop = app->loop;
-
-    ImGui::Checkbox("Cartoon", &cartoon);
     ImGui::SameLine();
-    ImGui::Checkbox("Rotation", &rotate);
-    ImGui::SameLine();
-    ImGui::Checkbox("Loop", &loop);
-
+    ImGui::Checkbox("Cartoon Scale", &cartoon);
     app->cartoon = cartoon;
-    app->rotate = rotate;
-    app->loop = loop;
 
     ImGui::End();
     ImGui::Render();
@@ -925,7 +1094,7 @@ void gllv_app(int argc, char **argv)
     glClearColor(0.f, 0.f, 0.f, 1.f);
 
     lv_vg_uinit(&app);
-    lv_ephem_init(&app, 360, 36, 2323710.5, 2615904.5);
+    lv_ephem_init(&app);
     lv_main_loop(window, &app);
     lv_ephem_destroy(&app);
     lv_vg_udestroy(&app);
