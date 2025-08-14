@@ -126,8 +126,9 @@ static lv_oid data[10] = {
 };
 
 static const char* ephembra_data_file = "build/data/DE440Coeff.bin";
-static const char* ephembra_mono_font = "build/fonts/DejaVuSansMono.ttf";
-static const char* ephembra_sans_font = "build/fonts/DejaVuSans.ttf";
+static const char* ephembra_sans_font = "resources/fonts/DejaVuSans.ttf";
+static const char* ephembra_mono_font = "resources/fonts/DejaVuSansMono.ttf";
+static const char* ephembra_awes_font = "resources/fonts/fontawesome-webfont.ttf";
 static const char* ephembra_image_tmpl = "resources/images/%s.png";
 
 static const float min_zoom = 2.0f, max_zoom = 2048.0f;
@@ -217,7 +218,8 @@ static void lv_ephem_init(lv_app *app, size_t steps, size_t divs,
 
     app->eph = (double*)malloc(countof(data) * steps * sizeof(double) * 3);
     app->images = (int*)malloc(countof(data) * sizeof(int));
-    app->font = nvgCreateFont(vg, "mono", ephembra_sans_font);
+    nvgCreateFont(vg, "mono", ephembra_mono_font);
+    nvgCreateFont(vg, "sans", ephembra_sans_font);
 
     for (size_t oid = 0; oid < countof(data); oid++) {
         char path[64];
@@ -487,11 +489,9 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
         nvgFill(vg);
 
         nvgFontSize(vg, 24.0f);
-        nvgFontFace(vg, "mono");
+        nvgFontFace(vg, "sans");
         nvgFillColor(vg, nvgRGBA(255, 255, 255, 255));
-
         nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-
         nvgBeginPath(vg);
         nvgText(vg, q[0], q[1] + 24.0f + ih * s * 0.5f, name, NULL);
     }
@@ -904,9 +904,16 @@ void gllv_app(int argc, char **argv)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 130");
 
+    ImFontConfig icons_config;
+    icons_config.MergeMode = true;
+    icons_config.PixelSnapH = true;
+    ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 };
+
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->Clear();
     io.Fonts->AddFontFromFileTTF(ephembra_mono_font, 14.0f);
+    io.Fonts->AddFontFromFileTTF(ephembra_awes_font, 14.0f,
+        &icons_config, icons_ranges);
     io.Fonts->Build();
     io.FontGlobalScale = 2.0f;
     ImGui::GetStyle().ScaleAllSizes(1.5f);
