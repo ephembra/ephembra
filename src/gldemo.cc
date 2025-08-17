@@ -93,8 +93,9 @@ struct lv_app
     int ljd, ljdf;
     double jd;
     lv_date date;
-    int cartoon;
-    int playback;
+    bool grid;
+    bool cartoon;
+    bool playback;
     double *eph;
     int *images;
     int font;
@@ -276,6 +277,7 @@ static void lv_ephem_init(lv_app *app)
     app->ejdf = 500;
     app->cjd = app->sjd + (app->ejd - app->sjd) / 2;
     app->cjdf = 0;
+    app->grid = 1;
     app->cartoon = 1;
     app->playback = 0;
 
@@ -460,7 +462,91 @@ static inline lv_color lv_oid_color(lv_app* app, size_t oid, float alpha)
     }
 }
 
-static void lv_planets_3d(lv_app *app, lv_context* ctx, float w, float h)
+/* mean obliquity of the ecliptic at J2000 (in radians) */
+#define EPS0_MEAN_OBLIQ_J2000 (84381.406 * (M_PI / (180.0 * 3600.0)))
+
+static void lv_ecliptic_tilt(mat4x4 R) {
+    mat4x4_identity(R);
+
+    float c = cosf(EPS0_MEAN_OBLIQ_J2000);
+    float s = sinf(EPS0_MEAN_OBLIQ_J2000);
+
+    // rotation about X axis
+    R[1][1] =  c;
+    R[1][2] =  s;
+    R[2][1] = -s;
+    R[2][2] =  c;
+}
+
+static void lv_ecliptic_basis(vec3 xhat, vec3 yhat, vec3 zhat)
+{
+    mat4x4 m;
+    lv_ecliptic_tilt(m);
+
+    vec4 X0 = {1, 0, 0, 1};
+    vec4 Y0 = {0, 1, 0, 1};
+    vec4 Z0 = {0, 0, 1, 1};
+
+    mat4x4_mul_vec4(xhat, m, X0);
+    mat4x4_mul_vec4(yhat, m, Y0);
+    mat4x4_mul_vec4(zhat, m, Z0);
+
+    vec4_norm(xhat, xhat);
+    vec4_norm(yhat, yhat);
+    vec4_norm(zhat, zhat);
+}
+
+static void lv_grid_3d(lv_app *app, lv_context* ctx)
+{
+    float g = global_scale * 7;
+    vec4 x0, y0, z0;
+
+    lv_ecliptic_basis(x0, y0, z0);
+
+    int n = 10;
+    float step = g * 0.1f;
+
+    lv_vg_stroke_width(ctx, 4.0f);
+    lv_vg_stroke_color(ctx, grey);
+    for (int i = -n; i <= n; i++) {
+
+        // Line parallel to y0, offset along x0
+        vec3 m0 = {
+            y0[0] * -g + x0[0] * (i * step),
+            y0[1] * -g + x0[1] * (i * step),
+            y0[2] * -g + x0[2] * (i * step)
+        };
+        vec3 m1 = {
+            y0[0] *  g + x0[0] * (i * step),
+            y0[1] *  g + x0[1] * (i * step),
+            y0[2] *  g + x0[2] * (i * step)
+        };
+
+        lv_vg_begin_path(ctx);
+        lv_vg_3d_move_to(ctx, lv_point_3d(m0[0], m0[1], m0[2]));
+        lv_vg_3d_line_to(ctx, lv_point_3d(m1[0], m1[1], m1[2]));
+        lv_vg_stroke(ctx);
+
+        // Line parallel to x0, offset along y0
+        vec3 m2 = {
+            x0[0] * -g + y0[0] * (i * step),
+            x0[1] * -g + y0[1] * (i * step),
+            x0[2] * -g + y0[2] * (i * step)
+        };
+        vec3 m3 = {
+            x0[0] *  g + y0[0] * (i * step),
+            x0[1] *  g + y0[1] * (i * step),
+            x0[2] *  g + y0[2] * (i * step)
+        };
+
+        lv_vg_begin_path(ctx);
+        lv_vg_3d_move_to(ctx, lv_point_3d(m2[0], m2[1], m2[2]));
+        lv_vg_3d_line_to(ctx, lv_point_3d(m3[0], m3[1], m3[2]));
+        lv_vg_stroke(ctx);
+    }
+}
+
+static void lv_planets_3d(lv_app *app, lv_context* ctx)
 {
     size_t steps = app->steps, edges = app->steps / app->divs;
 
@@ -611,7 +697,11 @@ static void lv_render(lv_app* app, float w, float h, float r)
     ctx = app->ctx_buffer;
     lv_buffer_vg_clear(ctx);
 
-    lv_planets_3d(app, ctx, w, h);
+    lv_planets_3d(app, ctx);
+
+    if (app->grid) {
+        lv_grid_3d(app, ctx);
+    }
 
     model_matrix_transform(app->m_mvp, scale, trans, rot, r);
     mat4x4_invert(app->m_inv, app->m_mvp);
@@ -711,9 +801,6 @@ void lv_date_picker(lv_date *date)
 
 static void lv_imgui(lv_app* app, float w, float h, float r)
 {
-    bool cartoon;
-    bool playback;
-
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
 
@@ -737,10 +824,10 @@ static void lv_imgui(lv_app* app, float w, float h, float r)
     ImGui::SameLine();
     lv_date_picker(&app->date);
 
-    cartoon = app->cartoon;
     ImGui::SameLine();
-    ImGui::Checkbox("Cartoon Scale", &cartoon);
-    app->cartoon = cartoon;
+    ImGui::Checkbox("Grid", &app->grid);
+    ImGui::SameLine();
+    ImGui::Checkbox("Cartoon Scale", &app->cartoon);
 
     ImGui::End();
     ImGui::Render();
