@@ -647,7 +647,6 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
         nvgFontFace(vg, "sans");
         nvgFillColor(vg, nvgRGBA(255, 255, 255, 255));
         nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-        nvgBeginPath(vg);
         nvgText(vg, q[0], q[1] + 24.0f + ih * s * 0.5f, name, NULL);
     }
 }
