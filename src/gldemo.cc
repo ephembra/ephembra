@@ -398,10 +398,10 @@ static void lv_ephem_calc(lv_app *app, double jd)
     }
 }
 
-static inline double lv_oid_scale(lv_app* app, size_t oid)
+static inline float lv_oid_scale(lv_app* app, size_t oid)
 {
-    double r = (data[oid].dist / data[ephem_id_Pluto].dist);
-    return app->cartoon_scale ? ((oid + 1.0) / countof(data)) / r : 1.0;
+    float r = (float)(data[oid].dist / data[ephem_id_Pluto].dist);
+    return app->cartoon_scale ? ((oid + 1.0f) / countof(data)) / r : 1.0f;
 }
 
 lv_color lv_rgb_to_hsv(lv_color c)
@@ -1136,27 +1136,37 @@ static int mouse_find_oid(lv_app *app, vec2f pos,
     int win_width, win_height;
     size_t steps = app->steps;
     double jd = app->cjd + app->cjdf;
-    double epsilon = global_scale / 12;
+    float epsilon = global_scale / 12;
+    float f = global_scale * app->zodiac_offset;
     vec3 near, far;
+    vec4 x0, y0, z0;
 
     glfwGetWindowSize(app->window, &win_width, &win_height);
     screen_to_object(near, pos.x, pos.y, 0, app->m_inv, win_width, win_height);
     screen_to_object(far, pos.x, pos.y, 1, app->m_inv, win_width, win_height);
 
+    lv_ecliptic_basis(x0, y0, z0);
+
     for (size_t oid = 1; oid < countof(data); oid++) {
-        double s = lv_oid_scale(app, oid);
+        float s = lv_oid_scale(app, oid);
         for (size_t i = 0; i < steps - 1; i++) {
             double interval = data[oid].orbit / steps;
             double tjd = jd - (i * interval);
             double *o1 = app->eph + oid * steps * 3 + i * 3;
             double *o2 = o1 + 3;
-            float z = (float)(o1[2] + o2[2]) * 0.5f * s;
+            float z = -z0[2] * f + (float)(o1[2] + o2[2]) * 0.5f * s;
             float t = (z - near[2]) / (far[2] - near[2]);
             float px = far[0] * t + near[0] * (1.0f - t);
             float py = far[1] * t + near[1] * (1.0f - t);
             vec2 p = { px, py };
-            vec2 a = { (float)(o1[0] * s), (float)(o1[1] * s) };
-            vec2 b = { (float)(o2[0] * s), (float)(o2[1] * s) };
+            vec2 a = {
+                -z0[0] * f + (float)o1[0] * s,
+                -z0[1] * f + (float)o1[1] * s
+            };
+            vec2 b = {
+                -z0[0] * f + (float)o2[0] * s,
+                -z0[1] * f + (float)o2[1] * s
+            };
             float d = vec2_dist_point_line(p, a, b);
             if (d < epsilon) {
                 *sel_oid = oid;
