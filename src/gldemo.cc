@@ -1111,7 +1111,7 @@ static void lv_imgui(lv_app* app, float w, float h, float r)
     ImGui::Checkbox("Name Legend", &app->name_legend);
     ImGui::Checkbox("Distance Legend", &app->dist_legend);
     ImGui::SliderFloat("Planet Scale", &app->planet_scale, 0.0f, 5.0f);
-    ImGui::Checkbox("Ecliptic Grid", &app->grid_layer);
+    ImGui::Checkbox("Grid Layer", &app->grid_layer);
     ImGui::SliderInt("Grid Divisions", &app->grid_steps, 1, 20);
     ImGui::SliderFloat("Grid Scale", &app->grid_scale, 0.0f, 20.0f);
     ImGui::Checkbox("Zodiac Layer", &app->zodiac_layer);
