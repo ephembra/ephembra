@@ -61,6 +61,7 @@
 typedef struct lv_app lv_app;
 typedef struct lv_oid lv_oid;
 typedef struct lv_oid_idx lv_oid_idx;
+typedef struct lv_sign lv_sign;
 
 struct lv_date
 {
@@ -93,9 +94,15 @@ struct lv_app
     int ljd, ljdf;
     double jd;
     lv_date date;
-    bool grid;
-    bool cartoon;
     bool playback;
+    bool cartoon_scale;
+    bool grid_layer;
+    bool zodiac_layer;
+    int grid_steps;
+    float grid_scale;
+    float planet_scale;
+    float zodiac_offset;
+    float zodiac_scale;
     double *eph;
     int *images;
     int font;
@@ -119,6 +126,12 @@ struct lv_oid
     lv_color color;     /* orbital trail color (RGBA, 0-1) */
 };
 
+struct lv_sign
+{
+    const char *symbol;
+     lv_color color;
+};
+
 static lv_oid data[10] = {
     { 0, "☉", "Sun",        1000000,    695700,      0.000, { 1.00, 0.84, 0.00, 1.0 } }, // golden-yellow photosphere
     { 1, "☿", "Mercury",   57909227,      4879,     87.969, { 0.60, 0.60, 0.60, 1.0 } }, // mid-grey, rocky
@@ -130,6 +143,21 @@ static lv_oid data[10] = {
     { 7, "♅", "Uranus",  2870658186,     50724,  30687.000, { 0.56, 0.75, 0.82, 1.0 } }, // pale cyan
     { 8, "♆", "Neptune", 4498396441,     49244,  60190.000, { 0.28, 0.35, 0.68, 1.0 } }, // deep azure blue
     { 9, "♇", "Pluto",   5906376272,      2377,  90560.000, { 0.72, 0.62, 0.57, 1.0 } }  // light brown-grey, icy patches
+};
+
+static lv_sign signs[12] = {
+    { "♈", { 0.937, 0.325, 0.314, 1.000 } }, // U+2648 Aries
+    { "♉", { 1.000, 0.439, 0.263, 1.000 } }, // U+2649 Taurus
+    { "♊", { 1.000, 0.655, 0.149, 1.000 } }, // U+264A Gemini
+    { "♋", { 1.000, 0.800, 0.196, 1.000 } }, // U+264B Cancer
+    { "♌", { 0.988, 0.894, 0.220, 1.000 } }, // U+264C Leo
+    { "♍", { 0.612, 0.800, 0.396, 1.000 } }, // U+264D Virgo
+    { "♎", { 0.400, 0.733, 0.416, 1.000 } }, // U+264E Libra
+    { "♏", { 0.149, 0.651, 0.604, 1.000 } }, // U+264F Scorpio
+    { "♐", { 0.980, 0.463, 0.824, 1.000 } }, // U+2650 Sagittarius
+    { "♑", { 0.494, 0.341, 0.761, 1.000 } }, // U+2651 Capricorn
+    { "♒", { 0.671, 0.278, 0.737, 1.000 } }, // U+2652 Aquarius
+    { "♓", { 0.925, 0.251, 0.478, 1.000 } }  // U+2653 Pisces
 };
 
 static const char* ephembra_data_file = "build/data/DE440Coeff.bin";
@@ -147,6 +175,15 @@ static int opt_height = 720;
 
 static lv_color grey;
 static lv_color white;
+
+int lv_oid_zsort(const void *p1, const void *p2)
+{
+    const lv_oid_idx *a = (lv_oid_idx *)p1;
+    const lv_oid_idx *b = (lv_oid_idx *)p2;
+    if (a->pos[2] < b->pos[2]) return -1;
+    else if (a->pos[2] > b->pos[2]) return 1;
+    else return 0;
+}
 
 static void lv_init_colors()
 {
@@ -277,9 +314,15 @@ static void lv_ephem_init(lv_app *app)
     app->ejdf = 500;
     app->cjd = app->sjd + (app->ejd - app->sjd) / 2;
     app->cjdf = 0;
-    app->grid = 1;
-    app->cartoon = 1;
     app->playback = 0;
+    app->cartoon_scale = 1;
+    app->grid_layer = 0;
+    app->grid_steps = 10;
+    app->grid_scale = 9.0f;
+    app->planet_scale = 2.5f;
+    app->zodiac_layer = 0;
+    app->zodiac_offset = 0.0f;
+    app->zodiac_scale = 9.0f;
 
     lv_update_date(app);
 
@@ -331,7 +374,7 @@ static void lv_ephem_calc(lv_app *app, double jd)
 static inline double lv_oid_scale(lv_app* app, size_t oid)
 {
     double r = (data[oid].dist / data[ephem_id_Pluto].dist);
-    return app->cartoon ? ((oid + 1.0) / countof(data)) / r : 1.0;
+    return app->cartoon_scale ? ((oid + 1.0) / countof(data)) / r : 1.0;
 }
 
 lv_color lv_rgb_to_hsv(lv_color c)
@@ -462,10 +505,22 @@ static inline lv_color lv_oid_color(lv_app* app, size_t oid, float alpha)
     }
 }
 
+/* project point p0 onto plane defined by orthonormal basis in x0, y0 */
+static inline void lv_project_to_basis(vec3 r, vec3 p0, vec3 x0, vec3 y0)
+{
+    vec3 x1, y1;
+    float cx = vec3_mul_inner(p0,x0) / vec3_mul_inner(x0,x0);
+    float cy = vec3_mul_inner(p0,y0) / vec3_mul_inner(y0,y0);
+    vec3_scale(x1, x0, cx);
+    vec3_scale(y1, y0, cy);
+    vec3_add(r, x1, y1);
+}
+
 /* mean obliquity of the ecliptic at J2000 (in radians) */
 #define EPS0_MEAN_OBLIQ_J2000 (84381.406 * (M_PI / (180.0 * 3600.0)))
 
-static void lv_ecliptic_tilt(mat4x4 R) {
+static void lv_ecliptic_tilt(mat4x4 R)
+{
     mat4x4_identity(R);
 
     float c = cosf(EPS0_MEAN_OBLIQ_J2000);
@@ -498,59 +553,208 @@ static void lv_ecliptic_basis(vec3 xhat, vec3 yhat, vec3 zhat)
 
 static void lv_grid_3d(lv_app *app, lv_context* ctx)
 {
-    float g = global_scale * 7;
+    float f = global_scale * app->zodiac_offset;
+    float g = global_scale * app->grid_scale;
     vec4 x0, y0, z0;
 
     lv_ecliptic_basis(x0, y0, z0);
 
-    int n = 10;
-    float step = g * 0.1f;
+    int n = app->grid_steps;
+    float step = g * (1.0f / app->grid_steps);
 
     lv_vg_stroke_width(ctx, 4.0f);
     lv_vg_stroke_color(ctx, grey);
     for (int i = -n; i <= n; i++) {
 
-        // Line parallel to y0, offset along x0
-        vec3 m0 = {
-            y0[0] * -g + x0[0] * (i * step),
-            y0[1] * -g + x0[1] * (i * step),
-            y0[2] * -g + x0[2] * (i * step)
+        vec3 p0 = {
+            -z0[0] * f + y0[0] * -g + x0[0] * (i * step),
+            -z0[1] * f + y0[1] * -g + x0[1] * (i * step),
+            -z0[2] * f + y0[2] * -g + x0[2] * (i * step)
         };
-        vec3 m1 = {
-            y0[0] *  g + x0[0] * (i * step),
-            y0[1] *  g + x0[1] * (i * step),
-            y0[2] *  g + x0[2] * (i * step)
-        };
-
-        lv_vg_begin_path(ctx);
-        lv_vg_3d_move_to(ctx, lv_point_3d(m0[0], m0[1], m0[2]));
-        lv_vg_3d_line_to(ctx, lv_point_3d(m1[0], m1[1], m1[2]));
-        lv_vg_stroke(ctx);
-
-        // Line parallel to x0, offset along y0
-        vec3 m2 = {
-            x0[0] * -g + y0[0] * (i * step),
-            x0[1] * -g + y0[1] * (i * step),
-            x0[2] * -g + y0[2] * (i * step)
-        };
-        vec3 m3 = {
-            x0[0] *  g + y0[0] * (i * step),
-            x0[1] *  g + y0[1] * (i * step),
-            x0[2] *  g + y0[2] * (i * step)
+        vec3 p1 = {
+            -z0[0] * f + y0[0] *  g + x0[0] * (i * step),
+            -z0[1] * f + y0[1] *  g + x0[1] * (i * step),
+            -z0[2] * f + y0[2] *  g + x0[2] * (i * step)
         };
 
         lv_vg_begin_path(ctx);
-        lv_vg_3d_move_to(ctx, lv_point_3d(m2[0], m2[1], m2[2]));
-        lv_vg_3d_line_to(ctx, lv_point_3d(m3[0], m3[1], m3[2]));
+        lv_vg_3d_move_to(ctx, lv_point_3d(p0[0], p0[1], p0[2]));
+        lv_vg_3d_line_to(ctx, lv_point_3d(p1[0], p1[1], p1[2]));
         lv_vg_stroke(ctx);
+
+        vec3 p2 = {
+            -z0[0] * f + x0[0] * -g + y0[0] * (i * step),
+            -z0[1] * f + x0[1] * -g + y0[1] * (i * step),
+            -z0[2] * f + x0[2] * -g + y0[2] * (i * step)
+        };
+        vec3 p3 = {
+            -z0[0] * f + x0[0] *  g + y0[0] * (i * step),
+            -z0[1] * f + x0[1] *  g + y0[1] * (i * step),
+            -z0[2] * f + x0[2] *  g + y0[2] * (i * step)
+        };
+
+        lv_vg_begin_path(ctx);
+        lv_vg_3d_move_to(ctx, lv_point_3d(p2[0], p2[1], p2[2]));
+        lv_vg_3d_line_to(ctx, lv_point_3d(p3[0], p3[1], p3[2]));
+        lv_vg_stroke(ctx);
+    }
+}
+
+static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
+{
+    float f = global_scale * app->zodiac_offset;
+    float g = global_scale * app->zodiac_scale;
+    size_t steps = app->steps;
+    vec4 x0, y0, z0;
+    double *o;
+
+    o = app->eph + ephem_id_EarthMoon * app->steps * 3;
+    float s = lv_oid_scale(app, ephem_id_EarthMoon);
+
+    lv_ecliptic_basis(x0, y0, z0);
+
+    for (int i = 0; i < 12; i++) {
+        vec3 p0 = {
+            z0[0] * f + (float)o[0]*s,
+            z0[1] * f + (float)o[1]*s,
+            z0[2] * f + (float)o[2]*s
+        };
+        lv_vg_stroke_color(ctx, white);
+        lv_vg_stroke_width(ctx, 4.0f);
+        lv_vg_fill_color(ctx, lv_rgbaf(0.1f, 0.1f, 0.1f, 1.0f));
+        lv_vg_begin_path(ctx);
+        lv_vg_3d_move_to(ctx, lv_point_3d(p0[0], p0[1], p0[2]));
+        for (int j = 0; j < 31; j++) {
+            float theta = 2.0f * M_PI * (i*30.0f+j) / 360.0f;
+            vec3 p1 = {
+                z0[0] * f + x0[0] * cosf(theta) * g + y0[0] * sinf(theta) * g,
+                z0[1] * f + x0[1] * cosf(theta) * g + y0[1] * sinf(theta) * g,
+                z0[2] * f + x0[2] * cosf(theta) * g + y0[2] * sinf(theta) * g,
+            };
+            lv_vg_3d_line_to(ctx, lv_point_3d(p1[0], p1[1], p1[2]));
+        }
+        lv_vg_close_path(ctx);
+        lv_vg_fill(ctx);
+        lv_vg_stroke(ctx);
+    }
+
+    lv_ecliptic_basis(x0, y0, z0);
+
+    for (size_t oid = 0; oid < countof(data); oid++)
+    {
+        float s = lv_oid_scale(app, oid);
+        lv_color color;
+        double *o = app->eph + oid * steps * 3;
+        if (o[0] != o[0]) continue;
+
+        vec3 p0 = {
+            (float)o[0]*s,
+            (float)o[1]*s,
+            (float)o[2]*s
+        };
+        vec3 p1;
+
+        lv_project_to_basis(p1, p0, x0, y0);
+
+        vec3 p2 = {
+            z0[0] * f + p1[0],
+            z0[1] * f + p1[1],
+            z0[2] * f + p1[2]
+        };
+        vec3 p3 = {
+            -z0[0] * f + (float)o[0]*s,
+            -z0[1] * f + (float)o[1]*s,
+            -z0[2] * f + (float)o[2]*s
+        };
+
+        lv_vg_begin_path(ctx);
+        lv_vg_3d_move_to(ctx, lv_point_3d(p2[0], p2[1], p2[2]));
+        lv_vg_3d_line_to(ctx, lv_point_3d(p3[0], p3[1], p3[2]));
+        lv_vg_stroke_width(ctx, 3.0f);
+        lv_vg_stroke_color(ctx, grey);
+        lv_vg_stroke(ctx);
+    }
+}
+
+static void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
+{
+    float f = global_scale * app->zodiac_offset;
+    float g = global_scale * app->zodiac_scale * 0.95f;
+    vec4 x0, y0, z0;
+    double *o;
+    NVGcontext* vg;
+
+    vg = *(NVGcontext**)app->ctx_nanovg->priv;
+
+    lv_ecliptic_basis(x0, y0, z0);
+
+    for (int i = 0; i < 12; i++)
+    {
+        float theta = 2.0f * M_PI * (i*30.0f+15.0f) / 360.0f;
+        vec4 p = {
+            z0[0] * f + x0[0] * cosf(theta) * g + y0[0] * sinf(theta) * g,
+            z0[1] * f + x0[1] * cosf(theta) * g + y0[1] * sinf(theta) * g,
+            z0[2] * f + x0[2] * cosf(theta) * g + y0[2] * sinf(theta) * g,
+            1
+        };
+        vec4 q;
+        object_to_screen(q, p, app->m_mvp, w, h);
+
+        nvgFontSize(vg, 48.0f);
+        nvgFontFace(vg, "sans");
+        nvgFillColor(vg, nvgRGBA(255, 255, 255, 255));
+        nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+        nvgText(vg, q[0], q[1], signs[i].symbol, NULL);
+    }
+
+    for (size_t oid = 0; oid < countof(data); oid++)
+    {
+        double *o;
+        float s, x, y;
+
+        o = app->eph + oid * app->steps * 3;
+        s = lv_oid_scale(app, oid);
+
+        vec3 p0 = {
+            (float)o[0]*s,
+            (float)o[1]*s,
+            (float)o[2]*s
+        };
+        vec3 p1;
+
+        lv_project_to_basis(p1, p0, x0, y0);
+
+        vec4 p2 = {
+            z0[0] * f + p1[0],
+            z0[1] * f + p1[1],
+            z0[2] * f + p1[2],
+            1.0f,
+        };
+
+        vec3 q;
+        object_to_screen(q, p2, app->m_mvp, w, h);
+
+        vg = *(NVGcontext**)app->ctx_nanovg->priv;
+
+        x = q[0];
+        y = q[1];
+
+        nvgBeginPath(vg);
+        nvgCircle(vg, x, y, 3.0f);
+        nvgFillColor(vg, nvgRGBA(255, 255, 255, 255));
+        nvgFill(vg);
     }
 }
 
 static void lv_planets_3d(lv_app *app, lv_context* ctx)
 {
     size_t steps = app->steps, edges = app->steps / app->divs;
+    float f = global_scale * app->zodiac_offset;
+    vec4 x0, y0, z0;
 
-    for (size_t oid = 1; oid < countof(data); oid++)
+    lv_ecliptic_basis(x0, y0, z0);
+
+    for (size_t oid = 0; oid < countof(data); oid++)
     {
         float s = lv_oid_scale(app, oid);
         lv_color color;
@@ -562,14 +766,24 @@ static void lv_planets_3d(lv_app *app, lv_context* ctx)
             lv_vg_begin_path(ctx);
             o = app->eph + oid * steps * 3 +  (i % steps) * 3;
             if (o[0] != o[0]) continue;
+            vec3 p0 = {
+                -z0[0] * f + (float)o[0]*s,
+                -z0[1] * f + (float)o[1]*s,
+                -z0[2] * f + (float)o[2]*s
+            };
             lv_vg_3d_move_to(ctx,
-                lv_point_3d(o[0]*s, o[1]*s, o[2]*s)
+                lv_point_3d(p0[0], p0[1], p0[2])
             );
             for (size_t j = i + 1; j <= i + edges && j < steps + 1; j++) {
                 o = app->eph + oid * steps * 3 + (j % steps) * 3;
                 if (o[0] != o[0]) break;
+                vec3 p1 = {
+                    -z0[0] * f + (float)o[0]*s,
+                    -z0[1] * f + (float)o[1]*s,
+                    -z0[2] * f + (float)o[2]*s
+                };
                 lv_vg_3d_line_to(ctx,
-                    lv_point_3d(o[0]*s, o[1]*s, o[2]*s)
+                    lv_point_3d(p1[0], p1[1], p1[2])
                 );
             }
             color = lv_oid_color(app, oid, alpha);
@@ -579,36 +793,32 @@ static void lv_planets_3d(lv_app *app, lv_context* ctx)
     }
 }
 
-int lv_planet_zsort(const void *p1, const void *p2)
-{
-    const lv_oid_idx *a = (lv_oid_idx *)p1;
-    const lv_oid_idx *b = (lv_oid_idx *)p2;
-    if (a->pos[2] < b->pos[2]) return -1;
-    else if (a->pos[2] > b->pos[2]) return 1;
-    else return 0;
-}
-
 static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
 {
+    float f = global_scale * app->zodiac_offset;
+    vec4 x0, y0, z0;
     lv_oid_idx zidx[countof(data)];
+
+    lv_ecliptic_basis(x0, y0, z0);
 
     for (size_t oid = 0; oid < countof(data); oid++)
     {
-        vec4 p;
         double *o;
         float s;
 
         o = app->eph + oid * app->steps * 3;
         s = lv_oid_scale(app, oid);
-        p[0] = (float)o[0] * s;
-        p[1] = (float)o[1] * s;
-        p[2] = (float)o[2] * s;
-        p[3] = 1.0f;
+        vec4 p1 = {
+            -z0[0] * f + (float)o[0] * s,
+            -z0[1] * f + (float)o[1] * s,
+            -z0[2] * f + (float)o[2] * s,
+            1.0f
+        };
         zidx[oid].oid = oid;
-        object_to_screen(zidx[oid].pos, p, app->m_mvp, w, h);
+        object_to_screen(zidx[oid].pos, p1, app->m_mvp, w, h);
     }
 
-    qsort(zidx, countof(data), sizeof(lv_oid_idx), lv_planet_zsort);
+    qsort(zidx, countof(data), sizeof(lv_oid_idx), lv_oid_zsort);
 
     for (size_t idx = 0; idx < countof(data); idx++)
     {
@@ -617,7 +827,7 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
         NVGcolor vgc;
         size_t oid;
         int img, iw, ih;
-        float r, s, dw, dh, x, y;
+        float r, a, b, s, dw, dh, x, y;
         char name[64];
         vec4 q;
 
@@ -633,7 +843,9 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
 
         snprintf(name, sizeof(name), "%s %s", data[oid].symbol, data[oid].name);
         r = data[oid].diameter / data[ephem_id_Jupiter].diameter;
-        s = 0.08f + 0.16f * log10f(1.0f + 9.0f * r);
+        a = app->planet_scale / 50.0f;
+        b = app->planet_scale / 25.0f;
+        s = a + b * log10f(1.0f + 9.0f * r);
         dw = iw * s, dh = ih * s;
         x = q[0] - dw/2.0f;
         y = q[1] - dh/2.0f;
@@ -696,9 +908,13 @@ static void lv_render(lv_app* app, float w, float h, float r)
     ctx = app->ctx_buffer;
     lv_buffer_vg_clear(ctx);
 
+    if (app->zodiac_layer) {
+        lv_zodiac_3d(app, ctx);
+    }
+
     lv_planets_3d(app, ctx);
 
-    if (app->grid) {
+    if (app->grid_layer) {
         lv_grid_3d(app, ctx);
     }
 
@@ -712,6 +928,10 @@ static void lv_render(lv_app* app, float w, float h, float r)
     lv_vg_push(ctx);
     lv_buffer_vg_playback(app->ctx_buffer, ctx);
     lv_vg_pop(ctx);
+
+    if (app->zodiac_layer) {
+        lv_zodiac_2d(app, ctx, w, h);
+    }
 
     lv_planets_2d(app, ctx, w, h);
 
@@ -823,10 +1043,16 @@ static void lv_imgui(lv_app* app, float w, float h, float r)
     ImGui::SameLine();
     lv_date_picker(&app->date);
 
-    ImGui::SameLine();
-    ImGui::Checkbox("Grid", &app->grid);
-    ImGui::SameLine();
-    ImGui::Checkbox("Cartoon Scale", &app->cartoon);
+    if (ImGui::CollapsingHeader("Settings")) {
+        ImGui::Checkbox("Cartoon Scaling", &app->cartoon_scale);
+        ImGui::SliderFloat("Planet Scale", &app->planet_scale, 0.0f, 5.0f);
+        ImGui::Checkbox("Ecliptic Grid", &app->grid_layer);
+        ImGui::SliderInt("Grid Divisions", &app->grid_steps, 1, 20);
+        ImGui::SliderFloat("Grid Scale", &app->grid_scale, 0.0f, 20.0f);
+        ImGui::Checkbox("Enable Zodiac", &app->zodiac_layer);
+        ImGui::SliderFloat("Zodiac Offset", &app->zodiac_offset, 0.0f, 20.0f);
+        ImGui::SliderFloat("Zodiac Scale", &app->zodiac_scale, 0.0f, 20.0f);
+    }
 
     ImGui::End();
     ImGui::Render();
