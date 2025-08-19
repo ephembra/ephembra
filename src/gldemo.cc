@@ -362,7 +362,8 @@ static void lv_ephem_init(lv_app *app)
     nvgCreateFont(vg, "mono", ephembra_mono_font);
     nvgCreateFont(vg, "sans", ephembra_sans_font);
 
-    for (size_t oid = 0; oid < countof(data); oid++) {
+    for (size_t oid = 0; oid < countof(data); oid++)
+    {
         char path[64];
         snprintf(path, sizeof(path), ephembra_image_tmpl, data[oid].name);
         app->images[oid] = nvgCreateImage(vg, path, NVG_IMAGE_GENERATE_MIPMAPS);
@@ -387,8 +388,10 @@ static void lv_ephem_destroy(lv_app *app)
 static void lv_ephem_calc(lv_app *app, double jd)
 {
     size_t steps = app->steps;
-    for (size_t oid = 1; oid < countof(data); oid++) {
-        for (size_t i = 0; i < steps; i++) {
+    for (size_t oid = 1; oid < countof(data); oid++)
+    {
+        for (size_t i = 0; i < steps; i++)
+        {
             double interval = data[oid].orbit / steps;
             double tjd = jd - (i * interval);
             size_t row = de440_find_row(&app->ctx, tjd);
@@ -591,8 +594,8 @@ static void lv_grid_3d(lv_app *app, lv_context* ctx)
 
     lv_vg_stroke_width(ctx, app->line_width);
     lv_vg_stroke_color(ctx, grey);
-    for (int i = -n; i <= n; i++) {
-
+    for (int i = -n; i <= n; i++)
+    {
         vec3 p0 = {
             -z0[0] * f + y0[0] * -g + x0[0] * (i * step),
             -z0[1] * f + y0[1] * -g + x0[1] * (i * step),
@@ -640,7 +643,8 @@ static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
 
     lv_ecliptic_basis(x0, y0, z0);
 
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < 12; i++)
+    {
         vec3 p0 = {
             z0[0] * f + (float)o[0]*s,
             z0[1] * f + (float)o[1]*s,
@@ -651,7 +655,8 @@ static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
         lv_vg_fill_color(ctx, lv_rgbaf(0.1f, 0.1f, 0.1f, 1.0f));
         lv_vg_begin_path(ctx);
         lv_vg_3d_move_to(ctx, lv_point_3d(p0[0], p0[1], p0[2]));
-        for (int j = 0; j < 31; j++) {
+        for (int j = 0; j < 31; j++)
+        {
             float theta = 2.0f * M_PI * (i*30.0f+j) / 360.0f;
             vec3 p1 = {
                 z0[0] * f + x0[0] * cosf(theta) * g + y0[0] * sinf(theta) * g,
@@ -788,7 +793,8 @@ static void lv_planets_3d(lv_app *app, lv_context* ctx)
         double *o;
 
         lv_vg_stroke_width(ctx, app->trail_width);
-        for (size_t i = 0; i < steps + 1; i += edges) {
+        for (size_t i = 0; i < steps + 1; i += edges)
+        {
             float alpha = (float)(steps-1-i) / steps;
             lv_vg_begin_path(ctx);
             o = app->eph + oid * steps * 3 +  (i % steps) * 3;
@@ -801,7 +807,8 @@ static void lv_planets_3d(lv_app *app, lv_context* ctx)
             lv_vg_3d_move_to(ctx,
                 lv_point_3d(p0[0], p0[1], p0[2])
             );
-            for (size_t j = i + 1; j <= i + edges && j < steps + 1; j++) {
+            for (size_t j = i + 1; j <= i + edges && j < steps + 1; j++)
+            {
                 o = app->eph + oid * steps * 3 + (j % steps) * 3;
                 if (o[0] != o[0]) break;
                 vec3 p1 = {
@@ -1147,9 +1154,11 @@ static int mouse_find_oid(lv_app *app, vec2f pos,
 
     lv_ecliptic_basis(x0, y0, z0);
 
-    for (size_t oid = 1; oid < countof(data); oid++) {
+    for (size_t oid = 1; oid < countof(data); oid++)
+    {
         float s = lv_oid_scale(app, oid);
-        for (size_t i = 0; i < steps - 1; i++) {
+        for (size_t i = 0; i < steps - 1; i++)
+        {
             double interval = data[oid].orbit / steps;
             double tjd = jd - (i * interval);
             double *o1 = app->eph + oid * steps * 3 + i * 3;
