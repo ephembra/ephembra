@@ -104,11 +104,13 @@ struct lv_app
     bool zodiac_layer;
     int grid_steps;
     int font_size;
+    int symbol_size;
     float ui_scale;
     float grid_scale;
     float trail_width;
     float line_width;
     float planet_scale;
+    float symbol_offset;
     float zodiac_offset;
     float zodiac_scale;
     double *eph;
@@ -340,6 +342,7 @@ static void lv_ephem_init(lv_app *app)
     app->name_legend = 0;
     app->dist_legend = 0;
     app->font_size = 12;
+    app->symbol_size = 16;
     app->ui_scale = 2.0f;
     app->grid_layer = 0;
     app->grid_steps = 10;
@@ -348,6 +351,7 @@ static void lv_ephem_init(lv_app *app)
     app->line_width = 2.0f;
     app->planet_scale = 2.5f;
     app->zodiac_layer = 0;
+    app->symbol_offset = -0.05f;
     app->zodiac_offset = 0.0f;
     app->zodiac_scale = 9.0f;
 
@@ -711,7 +715,7 @@ static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
 static void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
 {
     float f = global_scale * app->zodiac_offset;
-    float g = global_scale * app->zodiac_scale * 0.95f;
+    float g = global_scale * app->zodiac_scale * (1.0f - app->symbol_offset);
     vec4 x0, y0, z0;
     double *o;
     NVGcontext* vg;
@@ -732,7 +736,9 @@ static void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
         vec4 q;
         object_to_screen(q, p, app->m_mvp, w, h);
 
-        nvgFontSize(vg, 48.0f);
+        float symbol_size = app->symbol_size * app->ui_scale;
+
+        nvgFontSize(vg, symbol_size);
         nvgFontFace(vg, "sans");
         nvgFillColor(vg, nvgRGBA(255, 255, 255, 255));
         nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
@@ -888,6 +894,7 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
         nvgFill(vg);
 
         float font_size = app->font_size * app->ui_scale;
+        float symbol_size = app->symbol_size * app->ui_scale;
         float v = font_size;
 
         nvgFontFace(vg, "sans");
@@ -898,14 +905,17 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
         if (app->name_legend && app->sym_legend) {
             char name[64];
             snprintf(name, sizeof(name), "%s %s", data[oid].symbol, data[oid].name);
+            nvgFontSize(vg, font_size);
             nvgText(vg, q[0], q[1] + v + ih * s * 0.5f, name, NULL);
             v += font_size * 1.5f;
         }
         else if (app->name_legend) {
+            nvgFontSize(vg, font_size);
             nvgText(vg, q[0], q[1] + v + ih * s * 0.5f, data[oid].name, NULL);
             v += font_size * 1.5f;
         }
         else if (app->sym_legend) {
+            nvgFontSize(vg, symbol_size);
             nvgText(vg, q[0], q[1] + v + ih * s * 0.5f, data[oid].symbol, NULL);
             v += font_size * 1.5f;
         }
@@ -915,6 +925,7 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
             double *o = app->eph + oid * app->steps * 3;
             vec3 p = { (float)o[0], (float)o[1], (float)o[2] };
             snprintf(dist, sizeof(dist), "%12.0f km", vec3_len(p)/1e3);
+            nvgFontSize(vg, font_size);
             nvgText(vg, q[0], q[1] + v + ih * s * 0.5f, dist, NULL);
         }
     }
@@ -1075,6 +1086,27 @@ void lv_date_picker(lv_date *date)
     }
 }
 
+static void lv_font_size(const char *label, int *font_size)
+{
+    char font_size_str[16];
+    snprintf(font_size_str, sizeof(font_size_str), "%u", *font_size);
+
+    if (ImGui::BeginCombo(label, font_size_str)) {
+        for (int i = 0; i < IM_ARRAYSIZE(font_sizes); i++)
+        {
+            bool sel = (*font_size == font_sizes[i]);
+            snprintf(font_size_str, sizeof(font_size_str), "%u", font_sizes[i]);
+            if (ImGui::Selectable(font_size_str, sel)) {
+                *font_size = font_sizes[i];
+            }
+            if (sel) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+}
+
 static void lv_imgui(lv_app* app, float w, float h, float r)
 {
     ImGui_ImplOpenGL3_NewFrame();
@@ -1100,24 +1132,8 @@ static void lv_imgui(lv_app* app, float w, float h, float r)
 
     ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Checkbox("Cartoon Scaling", &app->cartoon_scale);
-
-    char font_size_str[16];
-    snprintf(font_size_str, sizeof(font_size_str), "%u", app->font_size);
-
-    if (ImGui::BeginCombo("Font Size", font_size_str)) {
-        for (int i = 0; i < IM_ARRAYSIZE(font_sizes); i++) {
-            bool sel = (app->font_size == font_sizes[i]);
-            snprintf(font_size_str, sizeof(font_size_str), "%u", font_sizes[i]);
-            if (ImGui::Selectable(font_size_str, sel)) {
-                app->font_size = font_sizes[i];
-            }
-            if (sel) {
-                ImGui::SetItemDefaultFocus();
-            }
-        }
-        ImGui::EndCombo();
-    }
-
+    lv_font_size("Font Size", &app->font_size);
+    lv_font_size("Symbol Size", &app->symbol_size);
     ImGui::Checkbox("Symbol Legend", &app->sym_legend);
     ImGui::Checkbox("Name Legend", &app->name_legend);
     ImGui::Checkbox("Distance Legend", &app->dist_legend);
@@ -1128,6 +1144,7 @@ static void lv_imgui(lv_app* app, float w, float h, float r)
     ImGui::SliderInt("Grid Divisions", &app->grid_steps, 1, 20);
     ImGui::SliderFloat("Grid Scale", &app->grid_scale, 0.0f, 20.0f);
     ImGui::Checkbox("Zodiac Layer", &app->zodiac_layer);
+    ImGui::SliderFloat("Symbol Offset", &app->symbol_offset, -0.1f, 0.1f);
     ImGui::SliderFloat("Zodiac Offset", &app->zodiac_offset, 0.0f, 20.0f);
     ImGui::SliderFloat("Zodiac Scale", &app->zodiac_scale, 0.0f, 20.0f);
     ImGui::End();
