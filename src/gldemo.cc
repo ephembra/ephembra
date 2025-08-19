@@ -106,6 +106,8 @@ struct lv_app
     int font_size;
     float ui_scale;
     float grid_scale;
+    float trail_width;
+    float line_width;
     float planet_scale;
     float zodiac_offset;
     float zodiac_scale;
@@ -342,6 +344,8 @@ static void lv_ephem_init(lv_app *app)
     app->grid_layer = 0;
     app->grid_steps = 10;
     app->grid_scale = 9.0f;
+    app->trail_width = 6.0f;
+    app->line_width = 2.0f;
     app->planet_scale = 2.5f;
     app->zodiac_layer = 0;
     app->zodiac_offset = 0.0f;
@@ -585,7 +589,7 @@ static void lv_grid_3d(lv_app *app, lv_context* ctx)
     int n = app->grid_steps;
     float step = g * (1.0f / app->grid_steps);
 
-    lv_vg_stroke_width(ctx, 4.0f);
+    lv_vg_stroke_width(ctx, app->line_width);
     lv_vg_stroke_color(ctx, grey);
     for (int i = -n; i <= n; i++) {
 
@@ -643,7 +647,7 @@ static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
             z0[2] * f + (float)o[2]*s
         };
         lv_vg_stroke_color(ctx, white);
-        lv_vg_stroke_width(ctx, 4.0f);
+        lv_vg_stroke_width(ctx, app->line_width);
         lv_vg_fill_color(ctx, lv_rgbaf(0.1f, 0.1f, 0.1f, 1.0f));
         lv_vg_begin_path(ctx);
         lv_vg_3d_move_to(ctx, lv_point_3d(p0[0], p0[1], p0[2]));
@@ -693,7 +697,7 @@ static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
         lv_vg_begin_path(ctx);
         lv_vg_3d_move_to(ctx, lv_point_3d(p2[0], p2[1], p2[2]));
         lv_vg_3d_line_to(ctx, lv_point_3d(p3[0], p3[1], p3[2]));
-        lv_vg_stroke_width(ctx, 3.0f);
+        lv_vg_stroke_width(ctx, app->line_width);
         lv_vg_stroke_color(ctx, grey);
         lv_vg_stroke(ctx);
     }
@@ -783,7 +787,7 @@ static void lv_planets_3d(lv_app *app, lv_context* ctx)
         lv_color color;
         double *o;
 
-        lv_vg_stroke_width(ctx, 6.0f);
+        lv_vg_stroke_width(ctx, app->trail_width);
         for (size_t i = 0; i < steps + 1; i += edges) {
             float alpha = (float)(steps-1-i) / steps;
             lv_vg_begin_path(ctx);
@@ -1110,6 +1114,8 @@ static void lv_imgui(lv_app* app, float w, float h, float r)
     ImGui::Checkbox("Symbol Legend", &app->sym_legend);
     ImGui::Checkbox("Name Legend", &app->name_legend);
     ImGui::Checkbox("Distance Legend", &app->dist_legend);
+    ImGui::SliderFloat("Trail Width", &app->trail_width, 0.0f, 12.0f);
+    ImGui::SliderFloat("Line Width", &app->line_width, 0.0f, 6.0f);
     ImGui::SliderFloat("Planet Scale", &app->planet_scale, 0.0f, 5.0f);
     ImGui::Checkbox("Grid Layer", &app->grid_layer);
     ImGui::SliderInt("Grid Divisions", &app->grid_steps, 1, 20);
