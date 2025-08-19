@@ -126,7 +126,7 @@ endmacro()
 #
 
 string(CONCAT ephembra_data_url
-    "https://media.githubusercontent.com/media/michaeljclark/"
+    "https://media.githubusercontent.com/media/ephembra/"
     "ephembra-data/refs/heads/trunk/data/DE440Coeff.bin")
 set(ephembra_data_file ${PROJECT_BINARY_DIR}/data/DE440Coeff.bin)
 add_custom_command(OUTPUT ${ephembra_data_file}
