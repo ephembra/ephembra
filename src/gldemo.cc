@@ -22,6 +22,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -312,6 +313,15 @@ static void lv_update_date(lv_app *app)
     app->date = lv_julian_to_date(app->jd);
 }
 
+static void lv_current_date(lv_app *app)
+{
+    time_t t = time(NULL);
+    struct tm *tm = gmtime(&t);
+    lv_date d = { tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday };
+    app->cjd = (int)lv_date_to_julian(d);
+    lv_update_date(app);
+}
+
 static void lv_ephem_init(lv_app *app)
 {
     NVGcontext *vg;
@@ -321,7 +331,6 @@ static void lv_ephem_init(lv_app *app)
     app->ejd = 2597640 - 500; /* 31-DEC-2399 */
     app->sjdf = -500;
     app->ejdf = 500;
-    app->cjd = app->sjd + (app->ejd - app->sjd) / 2;
     app->cjdf = 0;
     app->playback = 0;
     app->cartoon_scale = 1;
@@ -338,7 +347,7 @@ static void lv_ephem_init(lv_app *app)
     app->zodiac_offset = 0.0f;
     app->zodiac_scale = 9.0f;
 
-    lv_update_date(app);
+    lv_current_date(app);
 
     de440_create_ephem(&app->ctx, ephembra_data_file);
 
