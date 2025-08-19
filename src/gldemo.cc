@@ -96,9 +96,14 @@ struct lv_app
     lv_date date;
     bool playback;
     bool cartoon_scale;
+    bool sym_legend;
+    bool name_legend;
+    bool dist_legend;
     bool grid_layer;
     bool zodiac_layer;
     int grid_steps;
+    int font_size;
+    float ui_scale;
     float grid_scale;
     float planet_scale;
     float zodiac_offset;
@@ -158,6 +163,10 @@ static lv_sign signs[12] = {
     { "♑", { 0.494, 0.341, 0.761, 1.000 } }, // U+2651 Capricorn
     { "♒", { 0.671, 0.278, 0.737, 1.000 } }, // U+2652 Aquarius
     { "♓", { 0.925, 0.251, 0.478, 1.000 } }  // U+2653 Pisces
+};
+
+static const int font_sizes[] = {
+    8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72
 };
 
 static const char* ephembra_data_file = "build/data/DE440Coeff.bin";
@@ -316,6 +325,11 @@ static void lv_ephem_init(lv_app *app)
     app->cjdf = 0;
     app->playback = 0;
     app->cartoon_scale = 1;
+    app->sym_legend = 1;
+    app->name_legend = 0;
+    app->dist_legend = 0;
+    app->font_size = 12;
+    app->ui_scale = 2.0f;
     app->grid_layer = 0;
     app->grid_steps = 10;
     app->grid_scale = 9.0f;
@@ -828,7 +842,6 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
         size_t oid;
         int img, iw, ih;
         float r, a, b, s, dw, dh, x, y;
-        char name[64];
         vec4 q;
 
         oid = zidx[idx].oid;;
@@ -841,7 +854,6 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
         img = app->images[oid];
         nvgImageSize(vg, img, &iw, &ih);
 
-        snprintf(name, sizeof(name), "%s %s", data[oid].symbol, data[oid].name);
         r = data[oid].diameter / data[ephem_id_Jupiter].diameter;
         a = app->planet_scale / 50.0f;
         b = app->planet_scale / 25.0f;
@@ -855,11 +867,36 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
         nvgFillPaint(vg, nvgImagePattern(vg, x, y, dw, dh, 0.0f, img, 1.0f));
         nvgFill(vg);
 
-        nvgFontSize(vg, 24.0f);
+        float font_size = app->font_size * app->ui_scale;
+        float v = font_size;
+
         nvgFontFace(vg, "sans");
+        nvgFontSize(vg, font_size);
         nvgFillColor(vg, nvgRGBA(255, 255, 255, 255));
         nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-        nvgText(vg, q[0], q[1] + 24.0f + ih * s * 0.5f, name, NULL);
+
+        if (app->name_legend && app->sym_legend) {
+            char name[64];
+            snprintf(name, sizeof(name), "%s %s", data[oid].symbol, data[oid].name);
+            nvgText(vg, q[0], q[1] + v + ih * s * 0.5f, name, NULL);
+            v += font_size * 1.5f;
+        }
+        else if (app->name_legend) {
+            nvgText(vg, q[0], q[1] + v + ih * s * 0.5f, data[oid].name, NULL);
+            v += font_size * 1.5f;
+        }
+        else if (app->sym_legend) {
+            nvgText(vg, q[0], q[1] + v + ih * s * 0.5f, data[oid].symbol, NULL);
+            v += font_size * 1.5f;
+        }
+
+        if (app->dist_legend) {
+            char dist[64];
+            double *o = app->eph + oid * app->steps * 3;
+            vec3 p = { (float)o[0], (float)o[1], (float)o[2] };
+            snprintf(dist, sizeof(dist), "%12.0f km", vec3_len(p)/1e3);
+            nvgText(vg, q[0], q[1] + v + ih * s * 0.5f, dist, NULL);
+        }
     }
 }
 
@@ -1033,28 +1070,46 @@ static void lv_imgui(lv_app* app, float w, float h, float r)
         lv_update_date(app);
     }
     ImGui::PopItemWidth();
-
-    ImVec2 bs(36, 36);
     if (ImGui::Button(app->playback  ? "\uf04c##playback"
-                                     : "\uf04b##playback", bs)) {
+                                     : "\uf04b##playback", ImVec2(36, 36))) {
         app->playback = !app->playback;
     }
-
     ImGui::SameLine();
     lv_date_picker(&app->date);
+    ImGui::End();
 
-    if (ImGui::CollapsingHeader("Settings")) {
-        ImGui::Checkbox("Cartoon Scaling", &app->cartoon_scale);
-        ImGui::SliderFloat("Planet Scale", &app->planet_scale, 0.0f, 5.0f);
-        ImGui::Checkbox("Ecliptic Grid", &app->grid_layer);
-        ImGui::SliderInt("Grid Divisions", &app->grid_steps, 1, 20);
-        ImGui::SliderFloat("Grid Scale", &app->grid_scale, 0.0f, 20.0f);
-        ImGui::Checkbox("Enable Zodiac", &app->zodiac_layer);
-        ImGui::SliderFloat("Zodiac Offset", &app->zodiac_offset, 0.0f, 20.0f);
-        ImGui::SliderFloat("Zodiac Scale", &app->zodiac_scale, 0.0f, 20.0f);
+    ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Checkbox("Cartoon Scaling", &app->cartoon_scale);
+
+    char font_size_str[16];
+    snprintf(font_size_str, sizeof(font_size_str), "%u", app->font_size);
+
+    if (ImGui::BeginCombo("Font Size", font_size_str)) {
+        for (int i = 0; i < IM_ARRAYSIZE(font_sizes); i++) {
+            bool sel = (app->font_size == font_sizes[i]);
+            snprintf(font_size_str, sizeof(font_size_str), "%u", font_sizes[i]);
+            if (ImGui::Selectable(font_size_str, sel)) {
+                app->font_size = font_sizes[i];
+            }
+            if (sel) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
     }
 
+    ImGui::Checkbox("Symbol Legend", &app->sym_legend);
+    ImGui::Checkbox("Name Legend", &app->name_legend);
+    ImGui::Checkbox("Distance Legend", &app->dist_legend);
+    ImGui::SliderFloat("Planet Scale", &app->planet_scale, 0.0f, 5.0f);
+    ImGui::Checkbox("Ecliptic Grid", &app->grid_layer);
+    ImGui::SliderInt("Grid Divisions", &app->grid_steps, 1, 20);
+    ImGui::SliderFloat("Grid Scale", &app->grid_scale, 0.0f, 20.0f);
+    ImGui::Checkbox("Zodiac Layer", &app->zodiac_layer);
+    ImGui::SliderFloat("Zodiac Offset", &app->zodiac_offset, 0.0f, 20.0f);
+    ImGui::SliderFloat("Zodiac Scale", &app->zodiac_scale, 0.0f, 20.0f);
     ImGui::End();
+
     ImGui::Render();
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -1390,14 +1445,16 @@ void gllv_app(int argc, char **argv)
     icons_config.PixelSnapH = true;
     ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 };
 
+    lv_vg_uinit(&app);
+    lv_ephem_init(&app);
+
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->Clear();
     io.Fonts->AddFontFromFileTTF(ephembra_mono_font, 14.0f);
     io.Fonts->AddFontFromFileTTF(ephembra_awes_font, 14.0f,
         &icons_config, icons_ranges);
     io.Fonts->Build();
-    io.FontGlobalScale = 2.0f;
-    ImGui::GetStyle().ScaleAllSizes(1.5f);
+    io.FontGlobalScale = app.ui_scale;
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1405,9 +1462,8 @@ void gllv_app(int argc, char **argv)
     glDisable(GL_DEPTH_TEST);
     glClearColor(0.f, 0.f, 0.f, 1.f);
 
-    lv_vg_uinit(&app);
-    lv_ephem_init(&app);
     lv_main_loop(window, &app);
+
     lv_ephem_destroy(&app);
     lv_vg_udestroy(&app);
 
