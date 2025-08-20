@@ -1234,23 +1234,41 @@ static void lv_imgui(lv_app* app, float w, float h, float r)
     ImGui::End();
 
     ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Checkbox("Apply Precession", &app->precession);
+    ImGui::Text("Model");
+    ImGui::Separator();
+    ImGui::Checkbox("IAU 2006 Precession", &app->precession);
+    ImGui::SliderFloat("Rotation X", &app->rotation[0], 0.0f, 360.0f);
+    ImGui::SliderFloat("Rotation Y", &app->rotation[1], 0.0f, 360.0f);
+    ImGui::SliderFloat("Rotation Z", &app->rotation[2], 0.0f, 360.0f);
+
+    ImGui::Text("Style");
+    ImGui::Separator();
     ImGui::Checkbox("Cartoon Scaling", &app->cartoon_scale);
-    lv_font_size("Font Size", &app->font_size);
-    lv_font_size("Symbol Size", &app->symbol_size);
-    ImGui::Checkbox("Symbol Legend", &app->sym_legend);
-    ImGui::Checkbox("Name Legend", &app->name_legend);
-    ImGui::Checkbox("Distance Legend", &app->dist_legend);
     ImGui::SliderFloat("Trail Width", &app->trail_width, 0.0f, 12.0f);
     ImGui::SliderFloat("Line Width", &app->line_width, 0.0f, 6.0f);
     ImGui::SliderFloat("Planet Scale", &app->planet_scale, 0.0f, 5.0f);
+    lv_font_size("Font Size", &app->font_size);
+    lv_font_size("Symbol Size", &app->symbol_size);
+
+    ImGui::Text("Grid");
+    ImGui::Separator();
     ImGui::Checkbox("Grid Layer", &app->grid_layer);
     ImGui::SliderInt("Grid Divisions", &app->grid_steps, 1, 20);
     ImGui::SliderFloat("Grid Scale", &app->grid_scale, 0.0f, 20.0f);
+
+    ImGui::Text("Zodiac");
+    ImGui::Separator();
     ImGui::Checkbox("Zodiac Layer", &app->zodiac_layer);
     ImGui::SliderFloat("Symbol Offset", &app->symbol_offset, -0.1f, 0.1f);
     ImGui::SliderFloat("Zodiac Offset", &app->zodiac_offset, 0.0f, 20.0f);
     ImGui::SliderFloat("Zodiac Scale", &app->zodiac_scale, 0.0f, 20.0f);
+
+    ImGui::Text("Legends");
+    ImGui::Separator();
+    ImGui::Checkbox("Symbols", &app->sym_legend);
+    ImGui::Checkbox("Names", &app->name_legend);
+    ImGui::Checkbox("Distances", &app->dist_legend);
+
     ImGui::End();
 
     ImGui::Render();
