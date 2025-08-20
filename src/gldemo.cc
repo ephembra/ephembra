@@ -141,7 +141,8 @@ struct lv_oid
 struct lv_sign
 {
     const char *symbol;
-     lv_color color;
+    const char *name;
+    lv_color color;
 };
 
 static lv_oid data[10] = {
@@ -158,18 +159,18 @@ static lv_oid data[10] = {
 };
 
 static lv_sign signs[12] = {
-    { "♈", { 0.937, 0.325, 0.314, 1.000 } }, // U+2648 Aries
-    { "♉", { 1.000, 0.439, 0.263, 1.000 } }, // U+2649 Taurus
-    { "♊", { 1.000, 0.655, 0.149, 1.000 } }, // U+264A Gemini
-    { "♋", { 1.000, 0.800, 0.196, 1.000 } }, // U+264B Cancer
-    { "♌", { 0.988, 0.894, 0.220, 1.000 } }, // U+264C Leo
-    { "♍", { 0.612, 0.800, 0.396, 1.000 } }, // U+264D Virgo
-    { "♎", { 0.400, 0.733, 0.416, 1.000 } }, // U+264E Libra
-    { "♏", { 0.149, 0.651, 0.604, 1.000 } }, // U+264F Scorpio
-    { "♐", { 0.980, 0.463, 0.824, 1.000 } }, // U+2650 Sagittarius
-    { "♑", { 0.494, 0.341, 0.761, 1.000 } }, // U+2651 Capricorn
-    { "♒", { 0.671, 0.278, 0.737, 1.000 } }, // U+2652 Aquarius
-    { "♓", { 0.925, 0.251, 0.478, 1.000 } }  // U+2653 Pisces
+    { "♈", "Aries",       { 0.937, 0.325, 0.314, 1.000 } }, // U+2648
+    { "♉", "Taurus",      { 1.000, 0.439, 0.263, 1.000 } }, // U+2649
+    { "♊", "Gemini",      { 1.000, 0.655, 0.149, 1.000 } }, // U+264A
+    { "♋", "Cancer",      { 1.000, 0.800, 0.196, 1.000 } }, // U+264B
+    { "♌", "Leo",         { 0.988, 0.894, 0.220, 1.000 } }, // U+264C
+    { "♍", "Virgo",       { 0.612, 0.800, 0.396, 1.000 } }, // U+264D
+    { "♎", "Libra",       { 0.400, 0.733, 0.416, 1.000 } }, // U+264E
+    { "♏", "Scorpio",     { 0.149, 0.651, 0.604, 1.000 } }, // U+264F
+    { "♐", "Sagittarius", { 0.980, 0.463, 0.824, 1.000 } }, // U+2650
+    { "♑", "Capricorn",   { 0.494, 0.341, 0.761, 1.000 } }, // U+2651
+    { "♒", "Aquarius",    { 0.671, 0.278, 0.737, 1.000 } }, // U+2652
+    { "♓", "Pisces",      { 0.925, 0.251, 0.478, 1.000 } }  // U+2653
 };
 
 static const int font_sizes[] = {
@@ -658,6 +659,15 @@ static void lv_iau2006_combined_basis(vec3 x0, vec3 y0, vec3 z0, double jd)
     vec4_norm(x0, x0);
     vec4_norm(y0, y0);
     vec4_norm(z0, z0);
+}
+
+static void lv_iau2006_dynamic_matrix(lv_app *app, mat4x4 m)
+{
+    if (app->precession) {
+        lv_iau2006_combined_matrix(m, app->jd);
+    } else {
+        lv_iau2006_obliquity_matrix(m, app->jd);
+    }
 }
 
 static void lv_iau2006_dynamic_basis(lv_app *app, vec3 x0, vec3 y0, vec3 z0)
@@ -1272,6 +1282,52 @@ static void lv_imgui(lv_app* app, float w, float h, float r)
     ImGui::Checkbox("Names", &app->name_legend);
     ImGui::Checkbox("Distances", &app->dist_legend);
 
+    ImGui::End();
+
+    ImGui::Begin("Chart", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    if (ImGui::BeginTable("Chart", 3))
+    {
+        ImGui::TableSetupColumn("Planet");
+        ImGui::TableSetupColumn("Pos");
+        ImGui::TableSetupColumn("Sign");
+        ImGui::TableHeadersRow();
+
+        mat4x4 m, im;
+        lv_iau2006_dynamic_matrix(app, m);
+        mat4x4_invert(im, m);
+
+        double *e = app->eph + ephem_id_EarthMoon * app->steps * 3;
+
+        for (size_t oid = 0; oid < countof(data); oid++)
+        {
+            double *o = app->eph + oid * app->steps * 3;
+            if (o[0] != o[0]) continue;
+            if (oid == ephem_id_EarthMoon) continue;
+
+            vec4 p0 = {
+                (float)(o[0] - e[0]),
+                (float)(o[1] - e[1]),
+                (float)(o[2] - e[2]),
+                1
+            };
+            vec3 p1;
+            mat4x4_mul_vec4(p1, im, p0);
+
+            float a = atan2f(p1[1], p1[0]) * 180.0f / M_PI;
+            if (a < 0) a += 360.0f;
+            int deg = (int)floorf(a), min = (int)floorf((a - deg) * 60.0);
+            int sid = deg/30;
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s %s", data[oid].symbol, data[oid].name);
+            ImGui::TableSetColumnIndex(1);
+            ImGui::Text("%3d°%02d′", deg, min);
+            ImGui::TableSetColumnIndex(2);
+            ImGui::Text("%s %s", signs[sid].symbol, signs[sid].name);
+        }
+        ImGui::EndTable();
+    }
     ImGui::End();
 
     ImGui::Render();
