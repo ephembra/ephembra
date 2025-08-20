@@ -644,14 +644,21 @@ static void lv_iau2006_obliquity_basis(vec3 x0, vec3 y0, vec3 z0, double jd)
     vec4_norm(z0, z0);
 }
 
-static void lv_iau2006_combined_basis(vec3 x0, vec3 y0, vec3 z0, double jd)
+static void lv_iau2006_combined_matrix(mat4x4 R, double jd)
 {
-    mat4x4 Rpre, Robl, R;
+    mat4x4 Rpre, Robl;
 
     lv_iau2006_precession_matrix(Rpre, jd);
     lv_iau2006_obliquity_matrix(Robl, jd);
 
     mat4x4_mul(R, Rpre, Robl);
+}
+
+static void lv_iau2006_combined_basis(vec3 x0, vec3 y0, vec3 z0, double jd)
+{
+    mat4x4 R;
+
+    lv_iau2006_combined_matrix(R, jd);
 
     vec4 X0 = {1, 0, 0, 1};
     vec4 Y0 = {0, 1, 0, 1};
