@@ -96,6 +96,7 @@ struct lv_app
     double jd;
     lv_date date;
     bool playback;
+    bool precession;
     bool cartoon_scale;
     bool sym_legend;
     bool name_legend;
@@ -337,6 +338,7 @@ static void lv_ephem_init(lv_app *app)
     app->ejdf = 500;
     app->cjdf = 0;
     app->playback = 0;
+    app->precession = 1;
     app->cartoon_scale = 1;
     app->sym_legend = 1;
     app->name_legend = 0;
@@ -550,39 +552,127 @@ static inline void lv_project_to_basis(vec3 r, vec3 p0, vec3 x0, vec3 y0)
     vec3_add(r, x1, y1);
 }
 
-/* mean obliquity of the ecliptic at J2000 (in radians) */
-#define EPS0_MEAN_OBLIQ_J2000 (84381.406 * (M_PI / (180.0 * 3600.0)))
+/* Convert arcseconds to radians */
+#define ASEC2RAD (M_PI / (180.0 * 3600.0))
 
-static void lv_ecliptic_tilt(mat4x4 R)
+/* create precession rotation matrix (IAU 2006) for julian date */
+static void lv_iau2006_precession_matrix(mat4x4 R, double jd)
+{
+    double T = (jd - 2451545.0) / 36525.0;
+
+    /* Precession angles in arcseconds */
+    double zeta_A = (2306.083227*T + 0.2988499*T*T + 0.01801828*T*T*T
+        - 0.000005971*T*T*T*T - 0.0000003173*T*T*T*T*T) * ASEC2RAD;
+
+    double theta_A = (2004.191903*T - 0.4294934*T*T - 0.04182264*T*T*T
+        - 0.000007089*T*T*T*T - 0.0000001274*T*T*T*T*T) * ASEC2RAD;
+
+    double z_A = (2306.077181*T + 1.0927348*T*T + 0.01826837*T*T*T
+        - 0.000028596*T*T*T*T - 0.0000002904*T*T*T*T*T) * ASEC2RAD;
+
+    mat4x4 Rz1, Ry, Rz2, Rtmp;
+
+    mat4x4_identity(Rz1);
+    mat4x4_identity(Ry);
+    mat4x4_identity(Rz2);
+
+    /* Rz(-zeta_A) */
+    Rz1[0][0] = cos(-zeta_A); Rz1[0][1] = -sin(-zeta_A);
+    Rz1[1][0] = sin(-zeta_A); Rz1[1][1] =  cos(-zeta_A);
+
+    /* Ry(theta_A) */
+    Ry[0][0] =  cos(theta_A); Ry[0][2] = sin(theta_A);
+    Ry[2][0] = -sin(theta_A); Ry[2][2] = cos(theta_A);
+
+    /* Rz(-z_A) */
+    Rz2[0][0] = cos(-z_A); Rz2[0][1] = -sin(-z_A);
+    Rz2[1][0] = sin(-z_A); Rz2[1][1] =  cos(-z_A);
+
+    /* Multiply: R = Rz2 * Ry * Rz1 */
+    mat4x4_mul(Rtmp, Ry, Rz1);
+    mat4x4_mul(R, Rz2, Rtmp);
+}
+
+/* mean obliquity of the ecliptic at J2000 (in radians) */
+#define EPS0_MEAN_OBLIQ_J2000 (84381.406 * ASEC2RAD)
+
+/* mean obliquity of date IAU 2006/2000A series */
+static double lv_iau2006_obliquity_eps(double jd)
+{
+    double T = (jd - 2451545.0) / 36525.0;
+    double eps_arcsec =
+        84381.406
+      - 46.836769*T
+      - 0.0001831*T*T
+      + 0.00200340*T*T*T
+      - 0.000000576*T*T*T*T
+      - 0.0000000434*T*T*T*T*T;
+    return eps_arcsec * ASEC2RAD;
+}
+
+static void lv_iau2006_obliquity_matrix(mat4x4 R, double jd)
 {
     mat4x4_identity(R);
 
-    float c = cosf(EPS0_MEAN_OBLIQ_J2000);
-    float s = sinf(EPS0_MEAN_OBLIQ_J2000);
+    double eps = lv_iau2006_obliquity_eps(jd);
 
-    // rotation about X axis
+    float c = (float)cos(eps);
+    float s = (float)sin(eps);
+
+    /* rotation about X axis */
     R[1][1] =  c;
     R[1][2] =  s;
     R[2][1] = -s;
     R[2][2] =  c;
 }
 
-static void lv_ecliptic_basis(vec3 xhat, vec3 yhat, vec3 zhat)
+static void lv_iau2006_obliquity_basis(vec3 x0, vec3 y0, vec3 z0, double jd)
 {
     mat4x4 m;
-    lv_ecliptic_tilt(m);
+    lv_iau2006_obliquity_matrix(m, jd);
 
     vec4 X0 = {1, 0, 0, 1};
     vec4 Y0 = {0, 1, 0, 1};
     vec4 Z0 = {0, 0, 1, 1};
 
-    mat4x4_mul_vec4(xhat, m, X0);
-    mat4x4_mul_vec4(yhat, m, Y0);
-    mat4x4_mul_vec4(zhat, m, Z0);
+    mat4x4_mul_vec4(x0, m, X0);
+    mat4x4_mul_vec4(y0, m, Y0);
+    mat4x4_mul_vec4(z0, m, Z0);
 
-    vec4_norm(xhat, xhat);
-    vec4_norm(yhat, yhat);
-    vec4_norm(zhat, zhat);
+    vec4_norm(x0, x0);
+    vec4_norm(y0, y0);
+    vec4_norm(z0, z0);
+}
+
+static void lv_iau2006_combined_basis(vec3 x0, vec3 y0, vec3 z0, double jd)
+{
+    mat4x4 Rpre, Robl, R;
+
+    lv_iau2006_precession_matrix(Rpre, jd);
+    lv_iau2006_obliquity_matrix(Robl, jd);
+
+    mat4x4_mul(R, Rpre, Robl);
+
+    vec4 X0 = {1, 0, 0, 1};
+    vec4 Y0 = {0, 1, 0, 1};
+    vec4 Z0 = {0, 0, 1, 1};
+
+    mat4x4_mul_vec4(x0, R, X0);
+    mat4x4_mul_vec4(y0, R, Y0);
+    mat4x4_mul_vec4(z0, R, Z0);
+
+    vec4_norm(x0, x0);
+    vec4_norm(y0, y0);
+    vec4_norm(z0, z0);
+}
+
+static void lv_iau2006_dynamic_basis(lv_app *app, vec3 x0, vec3 y0, vec3 z0)
+{
+    if (app->precession) {
+        lv_iau2006_combined_basis(x0, y0, z0, app->jd);
+    } else {
+        lv_iau2006_obliquity_basis(x0, y0, z0, app->jd);
+    }
 }
 
 static void lv_grid_3d(lv_app *app, lv_context* ctx)
@@ -591,7 +681,7 @@ static void lv_grid_3d(lv_app *app, lv_context* ctx)
     float g = global_scale * app->grid_scale;
     vec4 x0, y0, z0;
 
-    lv_ecliptic_basis(x0, y0, z0);
+    lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
     int n = app->grid_steps;
     float step = g * (1.0f / app->grid_steps);
@@ -645,7 +735,7 @@ static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
     o = app->eph + ephem_id_EarthMoon * app->steps * 3;
     float s = lv_oid_scale(app, ephem_id_EarthMoon);
 
-    lv_ecliptic_basis(x0, y0, z0);
+    lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
     for (int i = 0; i < 12; i++)
     {
@@ -674,7 +764,7 @@ static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
         lv_vg_stroke(ctx);
     }
 
-    lv_ecliptic_basis(x0, y0, z0);
+    lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
     for (size_t oid = 0; oid < countof(data); oid++)
     {
@@ -722,7 +812,7 @@ static void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
 
     vg = *(NVGcontext**)app->ctx_nanovg->priv;
 
-    lv_ecliptic_basis(x0, y0, z0);
+    lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
     for (int i = 0; i < 12; i++)
     {
@@ -790,7 +880,7 @@ static void lv_planets_3d(lv_app *app, lv_context* ctx)
     float f = global_scale * app->zodiac_offset;
     vec4 x0, y0, z0;
 
-    lv_ecliptic_basis(x0, y0, z0);
+    lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
     for (size_t oid = 0; oid < countof(data); oid++)
     {
@@ -839,7 +929,7 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
     vec4 x0, y0, z0;
     lv_oid_idx zidx[countof(data)];
 
-    lv_ecliptic_basis(x0, y0, z0);
+    lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
     for (size_t oid = 0; oid < countof(data); oid++)
     {
@@ -1131,6 +1221,7 @@ static void lv_imgui(lv_app* app, float w, float h, float r)
     ImGui::End();
 
     ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Checkbox("Apply Precession", &app->precession);
     ImGui::Checkbox("Cartoon Scaling", &app->cartoon_scale);
     lv_font_size("Font Size", &app->font_size);
     lv_font_size("Symbol Size", &app->symbol_size);
@@ -1169,7 +1260,7 @@ static int mouse_find_oid(lv_app *app, vec2f pos,
     screen_to_object(near, pos.x, pos.y, 0, app->m_inv, win_width, win_height);
     screen_to_object(far, pos.x, pos.y, 1, app->m_inv, win_width, win_height);
 
-    lv_ecliptic_basis(x0, y0, z0);
+    lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
     for (size_t oid = 1; oid < countof(data); oid++)
     {
