@@ -78,6 +78,7 @@ struct lv_app
     mat4x4 m_mvp;
     mat4x4 m_inv;
     vec3 rotation;
+    vec3 translation;
     vec2f mouse;
     vec2f origin;
     float zoom;
@@ -215,6 +216,32 @@ static void lv_app_init(lv_app *app)
     app->rot_tjd = NAN;
     app->sel_oid = -1;
     app->sel_tjd = NAN;
+    app->steps = 360;
+    app->divs = 36;
+    app->sjd = 2341972 + 500; /* 1-JAN-1700 */
+    app->ejd = 2597640 - 500; /* 31-DEC-2399 */
+    app->sjdf = -500;
+    app->ejdf = 500;
+    app->cjdf = 0;
+    app->playback = 0;
+    app->precession = 1;
+    app->cartoon_scale = 1;
+    app->sym_legend = 1;
+    app->name_legend = 0;
+    app->dist_legend = 0;
+    app->font_size = 12;
+    app->symbol_size = 16;
+    app->ui_scale = 2.0f;
+    app->grid_layer = 0;
+    app->grid_steps = 10;
+    app->grid_scale = 9.0f;
+    app->trail_width = 6.0f;
+    app->line_width = 2.0f;
+    app->planet_scale = 2.5f;
+    app->zodiac_layer = 0;
+    app->symbol_offset = -0.05f;
+    app->zodiac_offset = 0.0f;
+    app->zodiac_scale = 9.0f;
     lv_init_colors();
 }
 
@@ -316,32 +343,6 @@ static void lv_current_date(lv_app *app)
 static void lv_ephem_init(lv_app *app)
 {
     NVGcontext *vg;
-    app->steps = 360;
-    app->divs = 36;
-    app->sjd = 2341972 + 500; /* 1-JAN-1700 */
-    app->ejd = 2597640 - 500; /* 31-DEC-2399 */
-    app->sjdf = -500;
-    app->ejdf = 500;
-    app->cjdf = 0;
-    app->playback = 0;
-    app->precession = 1;
-    app->cartoon_scale = 1;
-    app->sym_legend = 1;
-    app->name_legend = 0;
-    app->dist_legend = 0;
-    app->font_size = 12;
-    app->symbol_size = 16;
-    app->ui_scale = 2.0f;
-    app->grid_layer = 0;
-    app->grid_steps = 10;
-    app->grid_scale = 9.0f;
-    app->trail_width = 6.0f;
-    app->line_width = 2.0f;
-    app->planet_scale = 2.5f;
-    app->zodiac_layer = 0;
-    app->symbol_offset = -0.05f;
-    app->zodiac_offset = 0.0f;
-    app->zodiac_scale = 9.0f;
 
     lv_current_date(app);
 
@@ -1618,9 +1619,6 @@ void gllv_app(int argc, char **argv)
     icons_config.PixelSnapH = true;
     ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 };
 
-    lv_vg_uinit(&app);
-    lv_ephem_init(&app);
-
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->Clear();
     io.Fonts->AddFontFromFileTTF(ephembra_mono_font, 14.0f);
@@ -1635,8 +1633,9 @@ void gllv_app(int argc, char **argv)
     glDisable(GL_DEPTH_TEST);
     glClearColor(0.f, 0.f, 0.f, 1.f);
 
+    lv_vg_uinit(&app);
+    lv_ephem_init(&app);
     lv_main_loop(window, &app);
-
     lv_ephem_destroy(&app);
     lv_vg_udestroy(&app);
 
