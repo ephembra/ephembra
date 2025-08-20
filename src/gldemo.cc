@@ -210,7 +210,7 @@ static void lv_app_init(lv_app *app)
 {
     memset(app, 0, sizeof(app));
     app->zoom = 16.0f;
-    app->rotation[0] = 45.0f;
+    app->rotation[0] = 65.0f;
     app->rot_oid = -1;
     app->rot_tjd = NAN;
     app->sel_oid = -1;
@@ -239,20 +239,6 @@ static void lv_vg_udestroy(lv_app* app)
 }
 
 static float deg_rad(float a) { return a * M_PI / 180.0f; }
-
-static void model_matrix_transform(mat4x4 m, vec3 scale, vec3 trans,
-    vec3 rot, float r)
-{
-    mat4x4 m_model, m_proj;
-    mat4x4_identity(m_model);
-    mat4x4_translate_in_place(m_model, trans[0], trans[1], trans[2]);
-    mat4x4_scale_aniso(m_model, m_model, scale[0], scale[1], scale[2]);
-    mat4x4_rotate_X(m_model, m_model, deg_rad(rot[0]));
-    mat4x4_rotate_Y(m_model, m_model, deg_rad(rot[1]));
-    mat4x4_rotate_Z(m_model, m_model, deg_rad(rot[2]));
-    mat4x4_perspective(m_proj, deg_rad(30.f), r, 1.f, 1e6f);
-    mat4x4_mul(m, m_proj, m_model);
-}
 
 static double lv_date_to_julian(lv_date d)
 {
@@ -1028,6 +1014,27 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
     }
 }
 
+static void model_matrix_transform(lv_app *app, vec3 scale, vec3 trans,
+    vec3 rot, float r)
+{
+    mat4x4 m_model, m_proj;
+    mat4x4 r_frame, r_inv;
+
+    lv_iau2006_obliquity_matrix(r_frame, app->jd);
+    mat4x4_invert(r_inv, r_frame);
+
+    mat4x4_identity(m_model);
+    mat4x4_translate_in_place(m_model, trans[0], trans[1], trans[2]);
+    mat4x4_scale_aniso(m_model, m_model, scale[0], scale[1], scale[2]);
+    mat4x4_rotate_X(m_model, m_model, deg_rad(rot[0]));
+    mat4x4_rotate_Y(m_model, m_model, deg_rad(rot[1]));
+    mat4x4_rotate_Z(m_model, m_model, deg_rad(rot[2]));
+    mat4x4_mul(m_model, m_model, r_inv);
+    mat4x4_perspective(m_proj, deg_rad(30.f), r, 1.f, 1e6f);
+    mat4x4_mul(app->m_mvp, m_proj, m_model);
+    mat4x4_invert(app->m_inv, app->m_mvp);
+}
+
 static void lv_render(lv_app* app, float w, float h, float r)
 {
     vec3 rot = { app->rotation[0], app->rotation[1], app->rotation[2] };
@@ -1083,8 +1090,7 @@ static void lv_render(lv_app* app, float w, float h, float r)
         lv_grid_3d(app, ctx);
     }
 
-    model_matrix_transform(app->m_mvp, scale, trans, rot, r);
-    mat4x4_invert(app->m_inv, app->m_mvp);
+    model_matrix_transform(app, scale, trans, rot, r);
 
     ctx = app->ctx_xform;
     lv_xform_proj_matrix(app->ctx_xform, app->m_mvp, 1);
