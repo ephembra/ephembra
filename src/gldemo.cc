@@ -77,8 +77,8 @@ struct lv_app
     lv_context* ctx_xform;
     mat4x4 m_mvp;
     mat4x4 m_inv;
-    vec3 rotation;
-    vec3 translation;
+    vec3 rot;
+    vec3 trans;
     vec2f mouse;
     vec2f origin;
     float zoom;
@@ -211,7 +211,7 @@ static void lv_app_init(lv_app *app)
 {
     memset(app, 0, sizeof(app));
     app->zoom = 16.0f;
-    app->rotation[0] = 65.0f;
+    app->rot[0] = 65.0f;
     app->rot_oid = -1;
     app->rot_tjd = NAN;
     app->sel_oid = -1;
@@ -1038,13 +1038,12 @@ static void model_matrix_transform(lv_app *app, vec3 scale, vec3 trans,
 
 static void lv_render(lv_app* app, float w, float h, float r)
 {
-    vec3 rot = { app->rotation[0], app->rotation[1], app->rotation[2] };
+    vec3 rot = { app->rot[0], app->rot[1], app->rot[2] };
     vec3 scale = { 1/global_scale, 1/global_scale, 1/global_scale };
-    vec3 trans = { 0.0f, 0.0f, app->zoom };
+    vec3 trans = { app->trans[0], app->trans[1], app->trans[2] + app->zoom };
     vec2f origin = { app->origin.x, app->origin.y };
     mat4x4 m_model, m_proj;
     lv_context* ctx;
-    float g;
 
     if (app->playback) {
         if (++app->cjdf > app->ejdf) {
@@ -1238,9 +1237,12 @@ static void lv_imgui(lv_app* app, float w, float h, float r)
     ImGui::Text("Model");
     ImGui::Separator();
     ImGui::Checkbox("IAU 2006 Precession", &app->precession);
-    ImGui::SliderFloat("Rotation X", &app->rotation[0], 0.0f, 360.0f);
-    ImGui::SliderFloat("Rotation Y", &app->rotation[1], 0.0f, 360.0f);
-    ImGui::SliderFloat("Rotation Z", &app->rotation[2], 0.0f, 360.0f);
+    ImGui::SliderFloat("Rotate X", &app->rot[0], -180.0f, 180.0f);
+    ImGui::SliderFloat("Rotate Y", &app->rot[1], -180.0f, 180.0f);
+    ImGui::SliderFloat("Rotate Z", &app->rot[2], -180.0f, 180.0f);
+    ImGui::SliderFloat("Translate X", &app->trans[0], -10.0f, 10.0f);
+    ImGui::SliderFloat("Translate Y", &app->trans[1], -10.0f, 10.0f);
+    ImGui::SliderFloat("Translate Z", &app->trans[2], -10.0f, 10.0f);
 
     ImGui::Text("Style");
     ImGui::Separator();
@@ -1384,12 +1386,12 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
         break;
-    case GLFW_KEY_Z: app->rotation[2] += 5.f; break;
-    case GLFW_KEY_C: app->rotation[2] -= 5.f; break;
-    case GLFW_KEY_W: app->rotation[0] += 5.f; break;
-    case GLFW_KEY_S: app->rotation[0] -= 5.f; break;
-    case GLFW_KEY_A: app->rotation[1] += 5.f; break;
-    case GLFW_KEY_D: app->rotation[1] -= 5.f; break;
+    case GLFW_KEY_Z: app->rot[2] += 5.f; break;
+    case GLFW_KEY_C: app->rot[2] -= 5.f; break;
+    case GLFW_KEY_W: app->rot[0] += 5.f; break;
+    case GLFW_KEY_S: app->rot[0] -= 5.f; break;
+    case GLFW_KEY_A: app->rot[1] += 5.f; break;
+    case GLFW_KEY_D: app->rot[1] -= 5.f; break;
     case GLFW_KEY_P: {
         int fb_width, fb_height;
         glfwGetFramebufferSize(window, &fb_width, &fb_height);
