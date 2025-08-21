@@ -343,14 +343,10 @@ static void lv_current_date(lv_app *app)
 
 static void lv_ephem_init(lv_app *app)
 {
-    NVGcontext *vg;
+    NVGcontext *vg = *(NVGcontext**)app->ctx_nanovg->priv;
 
     lv_current_date(app);
-
     de440_create_ephem(&app->ctx, ephembra_data_file);
-
-    vg = *(NVGcontext**)app->ctx_nanovg->priv;
-
     app->eph = (double*)malloc(countof(data) * app->steps * sizeof(double) * 3);
     app->images = (int*)malloc(countof(data) * sizeof(int));
     nvgCreateFont(vg, "mono", ephembra_mono_font);
@@ -366,9 +362,8 @@ static void lv_ephem_init(lv_app *app)
 
 static void lv_ephem_destroy(lv_app *app)
 {
-    NVGcontext *vg;
+    NVGcontext *vg = *(NVGcontext**)app->ctx_nanovg->priv;
 
-    vg = *(NVGcontext**)app->ctx_nanovg->priv;
     for (size_t oid = 0; oid < countof(data); oid++) {
         nvgDeleteImage(vg, app->images[oid]);
     }
@@ -388,6 +383,24 @@ static double* lv_ephem_object(lv_app *app, size_t oid, size_t idx)
     return app->eph + oid * app->steps * 3 + (idx % app->steps) * 3;
 }
 
+static inline void lv_ephem_object_vec3(lv_app *app, size_t oid, size_t idx,
+    vec3 r, float s)
+{
+    double *o = lv_ephem_object(app, oid, idx);
+    r[0] = (float)o[0] * s;
+    r[1] = (float)o[1] * s;
+    r[2] = (float)o[2] * s;
+}
+
+static inline void lv_ephem_object_shift_vec3(lv_app *app, size_t oid, size_t idx,
+    vec3 r, vec3 b, float f, float s)
+{
+    double *o = lv_ephem_object(app, oid, idx);
+    r[0] = b[0] * f + (float)o[0] * s;
+    r[1] = b[1] * f + (float)o[1] * s;
+    r[2] = b[2] * f + (float)o[2] * s;
+}
+
 static void lv_ephem_calc(lv_app *app, double jd)
 {
     for (size_t oid = 1; oid < countof(data); oid++)
@@ -397,8 +410,8 @@ static void lv_ephem_calc(lv_app *app, double jd)
             double interval = data[oid].orbit / app->steps;
             double tjd = jd - (i * interval);
             size_t row = de440_find_row(&app->ctx, tjd);
-            double *obj = lv_ephem_object(app, oid, i);
-            de440_ephem_obj(&app->ctx, tjd, row, oid, obj);
+            double *o = lv_ephem_object(app, oid, i);
+            de440_ephem_obj(&app->ctx, tjd, row, oid, o);
         }
     }
 }
@@ -497,6 +510,22 @@ static void screen_to_object(vec3 r, vec3 p, mat4x4 invmatrix, int w, int h)
     r[0] = q[0] / q[3];
     r[1] = q[1] / q[3];
     r[2] = q[2] / q[3];
+}
+
+static inline void vec3_multiply_add(vec3 r, vec3 b, float s, vec3 p)
+{
+    r[0] = b[0] * s + p[0];
+    r[1] = b[1] * s + p[1];
+    r[2] = b[2] * s + p[2];
+}
+
+static inline void vec3_sincos_basis(vec3 r, float theta,
+    vec3 x0, vec3 y0, vec3 z0, float f, float g)
+{
+    float ct = cosf(theta) * g, st = sinf(theta) * g;
+    r[0] = z0[0] * f + x0[0] * ct + y0[0] * st;
+    r[1] = z0[1] * f + x0[1] * ct + y0[1] * st;
+    r[2] = z0[2] * f + x0[2] * ct + y0[2] * st;
 }
 
 static inline float clampf(float x, float min_val, float max_val)
@@ -740,21 +769,14 @@ static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
 {
     float f = global_scale * app->zodiac_offset;
     float g = global_scale * app->zodiac_scale;
-    vec4 x0, y0, z0;
-    double *o;
-
-    o = lv_ephem_object(app, ephem_id_EarthMoon, 0);
     float s = lv_oid_scale(app->cartoon, ephem_id_EarthMoon);
+    vec3 x0, y0, z0, p0;
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
+    lv_ephem_object_shift_vec3(app, ephem_id_EarthMoon, 0, p0, z0, f, s);
 
     for (int i = 0; i < 12; i++)
     {
-        vec3 p0 = {
-            z0[0] * f + (float)o[0]*s,
-            z0[1] * f + (float)o[1]*s,
-            z0[2] * f + (float)o[2]*s
-        };
         lv_vg_stroke_color(ctx, white);
         lv_vg_stroke_width(ctx, app->line_width);
         lv_vg_fill_color(ctx, lv_rgbaf(0.1f, 0.1f, 0.1f, 1.0f));
@@ -763,11 +785,8 @@ static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
         for (int j = 0; j < 31; j++)
         {
             float theta = 2.0f * M_PI * (i*30.0f+j) / 360.0f;
-            vec3 p1 = {
-                z0[0] * f + x0[0] * cosf(theta) * g + y0[0] * sinf(theta) * g,
-                z0[1] * f + x0[1] * cosf(theta) * g + y0[1] * sinf(theta) * g,
-                z0[2] * f + x0[2] * cosf(theta) * g + y0[2] * sinf(theta) * g,
-            };
+            vec3 p1;
+            vec3_sincos_basis(p1, theta, x0, y0, z0, f, g);
             lv_vg_3d_line_to(ctx, lv_point_3d(p1[0], p1[1], p1[2]));
         }
         lv_vg_close_path(ctx);
@@ -780,29 +799,13 @@ static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
     for (size_t oid = 0; oid < countof(data); oid++)
     {
         float s = lv_oid_scale(app->cartoon, oid);
-        lv_color color;
-        double *o = lv_ephem_object(app, oid, 0);
-        if (o[0] != o[0]) continue;
+        vec3 p0, p1, p2, p3;
 
-        vec3 p0 = {
-            (float)o[0]*s,
-            (float)o[1]*s,
-            (float)o[2]*s
-        };
-        vec3 p1;
-
+        lv_ephem_object_vec3(app, oid, 0, p0, s);
+        if (p0[0] != p0[0]) continue;
         lv_project_to_basis(p1, p0, x0, y0);
-
-        vec3 p2 = {
-            z0[0] * f + p1[0],
-            z0[1] * f + p1[1],
-            z0[2] * f + p1[2]
-        };
-        vec3 p3 = {
-            -z0[0] * f + (float)o[0]*s,
-            -z0[1] * f + (float)o[1]*s,
-            -z0[2] * f + (float)o[2]*s
-        };
+        vec3_multiply_add(p2, z0, f, p1);
+        lv_ephem_object_shift_vec3(app, oid, 0, p3, z0, -f, s);
 
         lv_vg_begin_path(ctx);
         lv_vg_3d_move_to(ctx, lv_point_3d(p2[0], p2[1], p2[2]));
@@ -815,28 +818,22 @@ static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
 
 static void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
 {
+    NVGcontext *vg = *(NVGcontext**)app->ctx_nanovg->priv;
+
     float f = global_scale * app->zodiac_offset;
     float g = global_scale * app->zodiac_scale * (1.0f - app->symbol_offset);
     vec4 x0, y0, z0;
-    double *o;
-    NVGcontext* vg;
-
-    vg = *(NVGcontext**)app->ctx_nanovg->priv;
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
     for (int i = 0; i < 12; i++)
     {
+        vec3 p, q;
         float theta = 2.0f * M_PI * (i*30.0f+15.0f) / 360.0f;
-        vec3 p = {
-            z0[0] * f + x0[0] * cosf(theta) * g + y0[0] * sinf(theta) * g,
-            z0[1] * f + x0[1] * cosf(theta) * g + y0[1] * sinf(theta) * g,
-            z0[2] * f + x0[2] * cosf(theta) * g + y0[2] * sinf(theta) * g
-        };
-        vec3 q;
-        object_to_screen(q, p, app->m_mvp, w, h);
-
         float symbol_size = app->symbol_size * app->ui_scale;
+
+        vec3_sincos_basis(p, theta, x0, y0, z0, f, g);
+        object_to_screen(q, p, app->m_mvp, w, h);
 
         nvgFontSize(vg, symbol_size);
         nvgFontFace(vg, "sans");
@@ -847,37 +844,17 @@ static void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
 
     for (size_t oid = 0; oid < countof(data); oid++)
     {
-        double *o;
         float s, x, y;
+        vec3 p0, p1, p2, q;
 
-        o = lv_ephem_object(app, oid, 0);
         s = lv_oid_scale(app->cartoon, oid);
-
-        vec3 p0 = {
-            (float)o[0]*s,
-            (float)o[1]*s,
-            (float)o[2]*s
-        };
-        vec3 p1;
-
+        lv_ephem_object_vec3(app, oid, 0, p0, s);
         lv_project_to_basis(p1, p0, x0, y0);
-
-        vec3 p2 = {
-            z0[0] * f + p1[0],
-            z0[1] * f + p1[1],
-            z0[2] * f + p1[2]
-        };
-
-        vec3 q;
+        vec3_multiply_add(p2, z0, f, p1);
         object_to_screen(q, p2, app->m_mvp, w, h);
 
-        vg = *(NVGcontext**)app->ctx_nanovg->priv;
-
-        x = q[0];
-        y = q[1];
-
         nvgBeginPath(vg);
-        nvgCircle(vg, x, y, 3.0f);
+        nvgCircle(vg, q[0], q[1], 3.0f);
         nvgFillColor(vg, nvgRGBA(255, 255, 255, 255));
         nvgFill(vg);
     }
@@ -887,45 +864,30 @@ static void lv_planets_3d(lv_app *app, lv_context* ctx)
 {
     float f = global_scale * app->zodiac_offset;
     vec4 x0, y0, z0;
+    vec3 p0, p1;
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
     for (size_t oid = 0; oid < countof(data); oid++)
     {
         float s = lv_oid_scale(app->cartoon, oid);
-        lv_color color;
-        double *o;
 
         lv_vg_stroke_width(ctx, app->trail_width);
         for (size_t i = 0; i < lv_steps(app) + 1; i += lv_edges(app))
         {
             float alpha = (float)(lv_steps(app)-1-i) / lv_steps(app);
+
             lv_vg_begin_path(ctx);
-            o = lv_ephem_object(app, oid, i);
-            if (o[0] != o[0]) continue;
-            vec3 p0 = {
-                -z0[0] * f + (float)o[0]*s,
-                -z0[1] * f + (float)o[1]*s,
-                -z0[2] * f + (float)o[2]*s
-            };
-            lv_vg_3d_move_to(ctx,
-                lv_point_3d(p0[0], p0[1], p0[2])
-            );
+            lv_ephem_object_shift_vec3(app, oid, i, p0, z0, -f, s);
+            if (p0[0] != p0[0]) continue;
+            lv_vg_3d_move_to(ctx, lv_point_3d(p0[0], p0[1], p0[2]));
             for (size_t j = i + 1; j <= i + lv_edges(app) && j < lv_steps(app) + 1; j++)
             {
-                o = lv_ephem_object(app, oid, j);
-                if (o[0] != o[0]) break;
-                vec3 p1 = {
-                    -z0[0] * f + (float)o[0]*s,
-                    -z0[1] * f + (float)o[1]*s,
-                    -z0[2] * f + (float)o[2]*s
-                };
-                lv_vg_3d_line_to(ctx,
-                    lv_point_3d(p1[0], p1[1], p1[2])
-                );
+                lv_ephem_object_shift_vec3(app, oid, j, p1, z0, -f, s);
+                if (p1[0] != p1[0]) break;
+                lv_vg_3d_line_to(ctx, lv_point_3d(p1[0], p1[1], p1[2]));
             }
-            color = lv_oid_color(app, oid, alpha);
-            lv_vg_stroke_color(ctx, color);
+            lv_vg_stroke_color(ctx, lv_oid_color(app, oid, alpha));
             lv_vg_stroke(ctx);
         }
     }
@@ -933,26 +895,22 @@ static void lv_planets_3d(lv_app *app, lv_context* ctx)
 
 static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
 {
+    NVGcontext *vg = *(NVGcontext**)app->ctx_nanovg->priv;
+
     float f = global_scale * app->zodiac_offset;
     vec4 x0, y0, z0;
+
     lv_oid_idx zidx[countof(data)];
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
     for (size_t oid = 0; oid < countof(data); oid++)
     {
-        double *o;
-        float s;
-
-        o = lv_ephem_object(app, oid, 0);
-        s = lv_oid_scale(app->cartoon, oid);
-        vec3 p1 = {
-            -z0[0] * f + (float)o[0] * s,
-            -z0[1] * f + (float)o[1] * s,
-            -z0[2] * f + (float)o[2] * s
-        };
+        vec3 p0;
+        float s = lv_oid_scale(app->cartoon, oid);
+        lv_ephem_object_shift_vec3(app, oid, 0, p0, z0, -f, s);
         zidx[oid].oid = oid;
-        object_to_screen(zidx[oid].pos, p1, app->m_mvp, w, h);
+        object_to_screen(zidx[oid].pos, p0, app->m_mvp, w, h);
     }
 
     qsort(zidx, countof(data), sizeof(lv_oid_idx), lv_oid_zsort);
@@ -960,7 +918,6 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
     for (size_t idx = 0; idx < countof(data); idx++)
     {
         lv_color color;
-        NVGcontext* vg;
         NVGcolor vgc;
         size_t oid;
         int img, iw, ih;
@@ -970,7 +927,6 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
         oid = zidx[idx].oid;;
         memcpy(q, zidx[idx].pos, sizeof(vec4));
 
-        vg = *(NVGcontext**)app->ctx_nanovg->priv;
         color = lv_oid_color(app, oid, 1.0f);
         memcpy(&vgc, &color, sizeof(vgc));
 
@@ -1017,11 +973,11 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
             v += font_size * 1.5f;
         }
 
-        if (app->dist_legend) {
+        if (app->dist_legend && oid > 0) {
             char dist[64];
-            double *o = lv_ephem_object(app, oid, 0);
-            vec3 p = { (float)o[0], (float)o[1], (float)o[2] };
-            snprintf(dist, sizeof(dist), "%12.0f km", vec3_len(p)/1e3);
+            vec3 p0;
+            lv_ephem_object_vec3(app, oid, 0, p0, 1.0f);
+            snprintf(dist, sizeof(dist), "%12.0f km", vec3_len(p0) / 1e3f);
             nvgFontSize(vg, font_size);
             nvgText(vg, q[0], q[1] + v + ih * s * 0.5f, dist, NULL);
         }
@@ -1304,6 +1260,7 @@ static void lv_imgui(lv_app* app, float w, float h, float r)
         for (size_t oid = 0; oid < countof(data); oid++)
         {
             double *o = lv_ephem_object(app, oid, 0);
+
             if (o[0] != o[0]) continue;
             if (oid == ephem_id_EarthMoon) continue;
 
