@@ -98,7 +98,7 @@ struct lv_app
     lv_date date;
     bool playback;
     bool precession;
-    bool cartoon_scale;
+    bool cartoon;
     bool sym_legend;
     bool name_legend;
     bool dist_legend;
@@ -226,7 +226,7 @@ static void lv_app_init(lv_app *app)
     app->cjdf = 0;
     app->playback = 0;
     app->precession = 1;
-    app->cartoon_scale = 1;
+    app->cartoon = 1;
     app->sym_legend = 1;
     app->name_legend = 0;
     app->dist_legend = 0;
@@ -395,10 +395,10 @@ static void lv_ephem_calc(lv_app *app, double jd)
     }
 }
 
-static inline float lv_oid_scale(lv_app* app, size_t oid)
+static inline float lv_oid_scale(bool cartoon, size_t oid)
 {
     float r = (float)(data[oid].dist / data[ephem_id_Pluto].dist);
-    return app->cartoon_scale ? ((oid + 1.0f) / countof(data)) / r : 1.0f;
+    return cartoon ? ((oid + 1.0f) / countof(data)) / r : 1.0f;
 }
 
 lv_color lv_rgb_to_hsv(lv_color c)
@@ -737,7 +737,7 @@ static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
     double *o;
 
     o = app->eph + ephem_id_EarthMoon * app->steps * 3;
-    float s = lv_oid_scale(app, ephem_id_EarthMoon);
+    float s = lv_oid_scale(app->cartoon, ephem_id_EarthMoon);
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
@@ -772,7 +772,7 @@ static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
 
     for (size_t oid = 0; oid < countof(data); oid++)
     {
-        float s = lv_oid_scale(app, oid);
+        float s = lv_oid_scale(app->cartoon, oid);
         lv_color color;
         double *o = app->eph + oid * steps * 3;
         if (o[0] != o[0]) continue;
@@ -845,7 +845,7 @@ static void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
         float s, x, y;
 
         o = app->eph + oid * app->steps * 3;
-        s = lv_oid_scale(app, oid);
+        s = lv_oid_scale(app->cartoon, oid);
 
         vec3 p0 = {
             (float)o[0]*s,
@@ -888,7 +888,7 @@ static void lv_planets_3d(lv_app *app, lv_context* ctx)
 
     for (size_t oid = 0; oid < countof(data); oid++)
     {
-        float s = lv_oid_scale(app, oid);
+        float s = lv_oid_scale(app->cartoon, oid);
         lv_color color;
         double *o;
 
@@ -941,7 +941,7 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
         float s;
 
         o = app->eph + oid * app->steps * 3;
-        s = lv_oid_scale(app, oid);
+        s = lv_oid_scale(app->cartoon, oid);
         vec4 p1 = {
             -z0[0] * f + (float)o[0] * s,
             -z0[1] * f + (float)o[1] * s,
@@ -1256,7 +1256,7 @@ static void lv_imgui(lv_app* app, float w, float h, float r)
 
     ImGui::Text("Style");
     ImGui::Separator();
-    ImGui::Checkbox("Cartoon Scaling", &app->cartoon_scale);
+    ImGui::Checkbox("Cartoon Scaling", &app->cartoon);
     ImGui::SliderFloat("Trail Width", &app->trail_width, 0.0f, 12.0f);
     ImGui::SliderFloat("Line Width", &app->line_width, 0.0f, 6.0f);
     ImGui::SliderFloat("Planet Scale", &app->planet_scale, 0.0f, 5.0f);
@@ -1354,7 +1354,7 @@ static int mouse_find_oid(lv_app *app, vec2f pos,
 
     for (size_t oid = 1; oid < countof(data); oid++)
     {
-        float s = lv_oid_scale(app, oid);
+        float s = lv_oid_scale(app->cartoon, oid);
         for (size_t i = 0; i < steps - 1; i++)
         {
             double interval = data[oid].orbit / steps;
