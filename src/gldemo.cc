@@ -379,17 +379,25 @@ static void lv_ephem_destroy(lv_app *app)
     free(app->eph);
 }
 
+static size_t lv_steps(lv_app *app) { return app->steps; }
+
+static size_t lv_edges(lv_app *app) { return app->steps / app->divs; }
+
+static double* lv_ephem_object(lv_app *app, size_t oid, size_t idx)
+{
+    return app->eph + oid * app->steps * 3 + (idx % app->steps) * 3;
+}
+
 static void lv_ephem_calc(lv_app *app, double jd)
 {
-    size_t steps = app->steps;
     for (size_t oid = 1; oid < countof(data); oid++)
     {
-        for (size_t i = 0; i < steps; i++)
+        for (size_t i = 0; i < app->steps; i++)
         {
-            double interval = data[oid].orbit / steps;
+            double interval = data[oid].orbit / app->steps;
             double tjd = jd - (i * interval);
             size_t row = de440_find_row(&app->ctx, tjd);
-            double *obj = app->eph + oid * steps * 3 + i * 3;
+            double *obj = lv_ephem_object(app, oid, i);
             de440_ephem_obj(&app->ctx, tjd, row, oid, obj);
         }
     }
@@ -732,11 +740,10 @@ static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
 {
     float f = global_scale * app->zodiac_offset;
     float g = global_scale * app->zodiac_scale;
-    size_t steps = app->steps;
     vec4 x0, y0, z0;
     double *o;
 
-    o = app->eph + ephem_id_EarthMoon * app->steps * 3;
+    o = lv_ephem_object(app, ephem_id_EarthMoon, 0);
     float s = lv_oid_scale(app->cartoon, ephem_id_EarthMoon);
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
@@ -774,7 +781,7 @@ static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
     {
         float s = lv_oid_scale(app->cartoon, oid);
         lv_color color;
-        double *o = app->eph + oid * steps * 3;
+        double *o = lv_ephem_object(app, oid, 0);
         if (o[0] != o[0]) continue;
 
         vec3 p0 = {
@@ -844,7 +851,7 @@ static void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
         double *o;
         float s, x, y;
 
-        o = app->eph + oid * app->steps * 3;
+        o = lv_ephem_object(app, oid, 0);
         s = lv_oid_scale(app->cartoon, oid);
 
         vec3 p0 = {
@@ -880,7 +887,6 @@ static void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
 
 static void lv_planets_3d(lv_app *app, lv_context* ctx)
 {
-    size_t steps = app->steps, edges = app->steps / app->divs;
     float f = global_scale * app->zodiac_offset;
     vec4 x0, y0, z0;
 
@@ -893,11 +899,11 @@ static void lv_planets_3d(lv_app *app, lv_context* ctx)
         double *o;
 
         lv_vg_stroke_width(ctx, app->trail_width);
-        for (size_t i = 0; i < steps + 1; i += edges)
+        for (size_t i = 0; i < lv_steps(app) + 1; i += lv_edges(app))
         {
-            float alpha = (float)(steps-1-i) / steps;
+            float alpha = (float)(lv_steps(app)-1-i) / lv_steps(app);
             lv_vg_begin_path(ctx);
-            o = app->eph + oid * steps * 3 +  (i % steps) * 3;
+            o = lv_ephem_object(app, oid, i);
             if (o[0] != o[0]) continue;
             vec3 p0 = {
                 -z0[0] * f + (float)o[0]*s,
@@ -907,9 +913,9 @@ static void lv_planets_3d(lv_app *app, lv_context* ctx)
             lv_vg_3d_move_to(ctx,
                 lv_point_3d(p0[0], p0[1], p0[2])
             );
-            for (size_t j = i + 1; j <= i + edges && j < steps + 1; j++)
+            for (size_t j = i + 1; j <= i + lv_edges(app) && j < lv_steps(app) + 1; j++)
             {
-                o = app->eph + oid * steps * 3 + (j % steps) * 3;
+                o = lv_ephem_object(app, oid, j);
                 if (o[0] != o[0]) break;
                 vec3 p1 = {
                     -z0[0] * f + (float)o[0]*s,
@@ -940,7 +946,7 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
         double *o;
         float s;
 
-        o = app->eph + oid * app->steps * 3;
+        o = lv_ephem_object(app, oid, 0);
         s = lv_oid_scale(app->cartoon, oid);
         vec4 p1 = {
             -z0[0] * f + (float)o[0] * s,
@@ -1016,7 +1022,7 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
 
         if (app->dist_legend) {
             char dist[64];
-            double *o = app->eph + oid * app->steps * 3;
+            double *o = lv_ephem_object(app, oid, 0);
             vec3 p = { (float)o[0], (float)o[1], (float)o[2] };
             snprintf(dist, sizeof(dist), "%12.0f km", vec3_len(p)/1e3);
             nvgFontSize(vg, font_size);
@@ -1296,11 +1302,11 @@ static void lv_imgui(lv_app* app, float w, float h, float r)
         lv_iau2006_dynamic_matrix(app, m);
         mat4x4_invert(im, m);
 
-        double *e = app->eph + ephem_id_EarthMoon * app->steps * 3;
+        double *e = lv_ephem_object(app, ephem_id_EarthMoon, 0);
 
         for (size_t oid = 0; oid < countof(data); oid++)
         {
-            double *o = app->eph + oid * app->steps * 3;
+            double *o = lv_ephem_object(app, oid, 0);
             if (o[0] != o[0]) continue;
             if (oid == ephem_id_EarthMoon) continue;
 
@@ -1339,7 +1345,6 @@ static int mouse_find_oid(lv_app *app, vec2f pos,
     size_t *sel_oid, double *sel_tjd)
 {
     int win_width, win_height;
-    size_t steps = app->steps;
     double jd = app->cjd + app->cjdf;
     float epsilon = global_scale / 12;
     float f = global_scale * app->zodiac_offset;
@@ -1355,12 +1360,12 @@ static int mouse_find_oid(lv_app *app, vec2f pos,
     for (size_t oid = 1; oid < countof(data); oid++)
     {
         float s = lv_oid_scale(app->cartoon, oid);
-        for (size_t i = 0; i < steps - 1; i++)
+        for (size_t i = 0; i < lv_steps(app) - 1; i++)
         {
-            double interval = data[oid].orbit / steps;
+            double interval = data[oid].orbit / lv_steps(app);
             double tjd = jd - (i * interval);
-            double *o1 = app->eph + oid * steps * 3 + i * 3;
-            double *o2 = o1 + 3;
+            double *o1 = lv_ephem_object(app, oid, i);
+            double *o2 = lv_ephem_object(app, oid, i + 1);
             float z = -z0[2] * f + (float)(o1[2] + o2[2]) * 0.5f * s;
             float t = (z - near[2]) / (far[2] - near[2]);
             float px = far[0] * t + near[0] * (1.0f - t);
