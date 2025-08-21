@@ -469,34 +469,34 @@ lv_color lv_hsv_to_rgb(lv_color c)
     return r;
 }
 
-static void object_to_screen(vec3 r, vec4 p, mat4x4 matrix,
-    int width, int height)
+static void object_to_screen(vec3 r, vec3 p, mat4x4 matrix, int w, int h)
 {
+    vec4 u = { p[0], p[1], p[2], 1.0f };
     vec4 q;
 
-    mat4x4_mul_vec4(q, matrix, p);
+    mat4x4_mul_vec4(q, matrix, u);
 
     q[0] /= q[3];
     q[1] /= q[3];
     q[2] /= q[3];
 
-    r[0] = (q[0] * 0.5f + 0.5f) * width;
-    r[1] = (q[1] * 0.5f + 0.5f) * height;
+    r[0] = (q[0] * 0.5f + 0.5f) * w;
+    r[1] = (q[1] * 0.5f + 0.5f) * h;
     r[2] = q[2];
 }
 
-static void screen_to_object(vec3 r, float x, float y, float z,
-    mat4x4 invmatrix, int width, int height)
+static void screen_to_object(vec3 r, vec3 p, mat4x4 invmatrix, int w, int h)
 {
-    vec4 b, a = {
-        (x / width) * 2.0f - 1.0f, (y / height) * 2.0f - 1.0f, z, 1.0f
+    vec4 u = {
+        (p[0] / w) * 2.0f - 1.0f, (p[1] / h) * 2.0f - 1.0f, p[2], 1.0f
     };
+    vec4 q;
 
-    mat4x4_mul_vec4(b, invmatrix, a);
+    mat4x4_mul_vec4(q, invmatrix, u);
 
-    r[0] = b[0] / b[3];
-    r[1] = b[1] / b[3];
-    r[2] = b[2] / b[3];
+    r[0] = q[0] / q[3];
+    r[1] = q[1] / q[3];
+    r[2] = q[2] / q[3];
 }
 
 static inline float clampf(float x, float min_val, float max_val)
@@ -828,13 +828,12 @@ static void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
     for (int i = 0; i < 12; i++)
     {
         float theta = 2.0f * M_PI * (i*30.0f+15.0f) / 360.0f;
-        vec4 p = {
+        vec3 p = {
             z0[0] * f + x0[0] * cosf(theta) * g + y0[0] * sinf(theta) * g,
             z0[1] * f + x0[1] * cosf(theta) * g + y0[1] * sinf(theta) * g,
-            z0[2] * f + x0[2] * cosf(theta) * g + y0[2] * sinf(theta) * g,
-            1
+            z0[2] * f + x0[2] * cosf(theta) * g + y0[2] * sinf(theta) * g
         };
-        vec4 q;
+        vec3 q;
         object_to_screen(q, p, app->m_mvp, w, h);
 
         float symbol_size = app->symbol_size * app->ui_scale;
@@ -863,11 +862,10 @@ static void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
 
         lv_project_to_basis(p1, p0, x0, y0);
 
-        vec4 p2 = {
+        vec3 p2 = {
             z0[0] * f + p1[0],
             z0[1] * f + p1[1],
-            z0[2] * f + p1[2],
-            1.0f,
+            z0[2] * f + p1[2]
         };
 
         vec3 q;
@@ -948,11 +946,10 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
 
         o = lv_ephem_object(app, oid, 0);
         s = lv_oid_scale(app->cartoon, oid);
-        vec4 p1 = {
+        vec3 p1 = {
             -z0[0] * f + (float)o[0] * s,
             -z0[1] * f + (float)o[1] * s,
-            -z0[2] * f + (float)o[2] * s,
-            1.0f
+            -z0[2] * f + (float)o[2] * s
         };
         zidx[oid].oid = oid;
         object_to_screen(zidx[oid].pos, p1, app->m_mvp, w, h);
@@ -1348,12 +1345,14 @@ static int mouse_find_oid(lv_app *app, vec2f pos,
     double jd = app->cjd + app->cjdf;
     float epsilon = global_scale / 12;
     float f = global_scale * app->zodiac_offset;
+    vec3 snear = { pos.x, pos.y, 0.0f };
+    vec3 sfar = { pos.x, pos.y, 1.0f };
     vec3 near, far;
     vec4 x0, y0, z0;
 
     glfwGetWindowSize(app->window, &win_width, &win_height);
-    screen_to_object(near, pos.x, pos.y, 0, app->m_inv, win_width, win_height);
-    screen_to_object(far, pos.x, pos.y, 1, app->m_inv, win_width, win_height);
+    screen_to_object(near, snear, app->m_inv, win_width, win_height);
+    screen_to_object(far, sfar, app->m_inv, win_width, win_height);
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
