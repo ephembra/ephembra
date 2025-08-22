@@ -566,6 +566,20 @@ static inline lv_color lv_oid_color(lv_app* app, size_t oid, float alpha)
     }
 }
 
+static inline float xy_angle(float x, float y)
+{
+    float a = atan2f(y, x) * 180.0f / M_PI;
+    return (a < 0) ? a + 360.0f : a;
+}
+
+static inline void vec4_vec3_w1(vec4 r, vec3 p)
+{
+    r[0] = p[0];
+    r[1] = p[1];
+    r[2] = p[2];
+    r[3] = 1.0f;
+}
+
 /* project point p0 onto plane defined by orthonormal basis in x0, y0 */
 static inline void lv_project_to_basis(vec3 r, vec3 p0, vec3 x0, vec3 y0)
 {
@@ -1246,37 +1260,34 @@ static void lv_imgui(lv_app* app, float w, float h, float r)
     ImGui::Begin("Chart", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
     if (ImGui::BeginTable("Chart", 3))
     {
+        mat4x4 m, im;
+        vec3 e, o, d;
+        vec4 q, p;
+        float a;
+        int deg, min, sid;
+
         ImGui::TableSetupColumn("Planet");
         ImGui::TableSetupColumn("Pos");
         ImGui::TableSetupColumn("Sign");
         ImGui::TableHeadersRow();
 
-        mat4x4 m, im;
+        lv_ephem_object_vec3(app, ephem_id_EarthMoon, 0, e, 1.0f);
         lv_iau2006_dynamic_matrix(app, m);
         mat4x4_invert(im, m);
 
-        double *e = lv_ephem_object(app, ephem_id_EarthMoon, 0);
-
         for (size_t oid = 0; oid < countof(data); oid++)
         {
-            double *o = lv_ephem_object(app, oid, 0);
-
-            if (o[0] != o[0]) continue;
             if (oid == ephem_id_EarthMoon) continue;
 
-            vec4 p0 = {
-                (float)(o[0] - e[0]),
-                (float)(o[1] - e[1]),
-                (float)(o[2] - e[2]),
-                1
-            };
-            vec3 p1;
-            mat4x4_mul_vec4(p1, im, p0);
+            lv_ephem_object_vec3(app, oid, 0, o, 1.0);
+            vec3_sub(d, o, e);
+            vec4_vec3_w1(q, d);
+            mat4x4_mul_vec4(p, im, q);
+            a = xy_angle(p[0], p[1]);
 
-            float a = atan2f(p1[1], p1[0]) * 180.0f / M_PI;
-            if (a < 0) a += 360.0f;
-            int deg = (int)floorf(a), min = (int)floorf((a - deg) * 60.0);
-            int sid = deg/30;
+            deg = (int)floorf(a);
+            min = (int)floorf((a - deg) * 60.0);
+            sid = deg / 30;
 
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
