@@ -194,15 +194,6 @@ static lv_color white;
  * gldemo
  */
 
-int lv_oid_zsort(const void *p1, const void *p2)
-{
-    const lv_oid_idx *a = (lv_oid_idx *)p1;
-    const lv_oid_idx *b = (lv_oid_idx *)p2;
-    if (a->pos[2] < b->pos[2]) return -1;
-    else if (a->pos[2] > b->pos[2]) return 1;
-    else return 0;
-}
-
 static void lv_init_colors()
 {
     grey      = { 0.4980, 0.4980, 0.4980, 1.0 };
@@ -355,12 +346,6 @@ static void lv_ephem_calc(lv_app *app, double jd)
     }
 }
 
-static inline float lv_oid_scale(bool cartoon, size_t oid)
-{
-    float r = (float)(data[oid].dist / data[ephem_id_Pluto].dist);
-    return cartoon ? ((oid + 1.0f) / countof(data)) / r : 1.0f;
-}
-
 static void lv_iau2006_dynamic_matrix(lv_app *app, mat4x4 m)
 {
     if (app->precession) {
@@ -387,6 +372,21 @@ static inline lv_color lv_oid_color(lv_app* app, size_t oid, float alpha)
     } else {
         return color;
     }
+}
+
+static inline float lv_oid_scale(bool cartoon, size_t oid)
+{
+    float r = (float)(data[oid].dist / data[ephem_id_Pluto].dist);
+    return cartoon ? ((oid + 1.0f) / countof(data)) / r : 1.0f;
+}
+
+static int lv_oid_zsort(const void *p1, const void *p2)
+{
+    const lv_oid_idx *a = (lv_oid_idx *)p1;
+    const lv_oid_idx *b = (lv_oid_idx *)p2;
+    if (a->pos[2] < b->pos[2]) return -1;
+    else if (a->pos[2] > b->pos[2]) return 1;
+    else return 0;
 }
 
 static void lv_grid_3d(lv_app *app, lv_context* ctx)
