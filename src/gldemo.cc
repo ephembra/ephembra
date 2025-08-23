@@ -187,18 +187,12 @@ static int opt_help;
 static int opt_width = 1280;
 static int opt_height = 720;
 
-static lv_color grey;
-static lv_color white;
+static lv_color grey = { 0.4980, 0.4980, 0.4980, 1.0 };
+static lv_color white = { 0.8157, 0.8157, 0.8157, 1.0 };
 
 /*
  * gldemo
  */
-
-static void lv_init_colors()
-{
-    grey      = { 0.4980, 0.4980, 0.4980, 1.0 };
-    white     = { 0.8157, 0.8157, 0.8157, 1.0 };
-}
 
 static void lv_app_init(lv_app *app)
 {
@@ -235,7 +229,6 @@ static void lv_app_init(lv_app *app)
     app->symbol_offset = -0.05f;
     app->zodiac_offset = 0.0f;
     app->zodiac_scale = 9.0f;
-    lv_init_colors();
 }
 
 static void lv_vg_uinit(lv_app* app)
