@@ -170,5 +170,10 @@ add_executable(convert src/convert.c)
 target_link_libraries(convert PRIVATE z matio ephembra)
 
 list(APPEND GLFW_LIBS_ALL z matio ephembra nanovg imgui ${FT2_LIBRARIES})
-add_executable(gldemo src/gldemo.cc)
+add_executable(gldemo
+    src/glui.cc
+    src/gldemo.c
+    src/demolib.c
+    src/stb_image.c
+    src/nanovg_gles3.c)
 gl_cprogram(gldemo)

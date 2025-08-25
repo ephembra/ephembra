@@ -19,6 +19,8 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
@@ -30,20 +32,13 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include <ft2build.h>
-#include FT_FREETYPE_H
-#include FT_MODULE_H
-#include FT_GLYPH_H
-#include FT_OUTLINE_H
-
 #include "demolib.h"
 
 #include "nanovg.h"
-#define NANOVG_GLES3_IMPLEMENTATION
+#define NANOVG_GLES3
 #include "nanovg_gl.h"
 #include "nanovg_gl_utils.h"
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
 #include "linmath.h"
@@ -55,94 +50,11 @@
 #include "lv_ops_buffer.h"
 #include "lv_ops_xform.h"
 
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
+#include "gldemo.h"
 
 #define countof(arr) (sizeof(arr)/sizeof(arr[0]))
 
-typedef struct lv_app lv_app;
-typedef struct lv_oid lv_oid;
-typedef struct lv_oid_idx lv_oid_idx;
-typedef struct lv_sign lv_sign;
-
-struct lv_app
-{
-    GLFWwindow* window;
-    lv_context* ctx_nanovg;
-    lv_context* ctx_buffer;
-    lv_context* ctx_xform;
-    mat4x4 m_mvp;
-    mat4x4 m_inv;
-    vec3 rot;
-    vec3 trans;
-    vec2f mouse;
-    vec2f origin;
-    float zoom;
-    vec2f last_mouse;
-    float last_zoom;
-    double rot_tjd;
-    size_t rot_oid;
-    double sel_tjd;
-    size_t sel_oid;
-    size_t steps;
-    size_t divs;
-    int sjd, sjdf;
-    int ejd, ejdf;
-    int cjd, cjdf;
-    int ljd, ljdf;
-    double jd;
-    lv_date date;
-    bool playback;
-    bool precession;
-    bool cartoon;
-    bool sym_legend;
-    bool name_legend;
-    bool dist_legend;
-    bool grid_layer;
-    bool zodiac_layer;
-    int grid_steps;
-    int font_size;
-    int symbol_size;
-    float ui_scale;
-    float grid_scale;
-    float trail_width;
-    float line_width;
-    float planet_scale;
-    float symbol_offset;
-    float zodiac_offset;
-    float zodiac_scale;
-    double *eph;
-    int *images;
-    int font;
-    ephem_ctx ctx;
-};
-
-struct lv_oid_idx
-{
-    size_t oid;
-    vec3 pos;
-};
-
-struct lv_oid
-{
-    size_t oid;         /* object ID */
-    const char *symbol; /* astronomical symbol */
-    const char *name;   /* object name */
-    double dist;        /* average semi-major axis (km) */
-    double diameter;    /* mean diameter (km) */
-    double orbit;       /* sidereal orbit period (days) */
-    lv_color color;     /* orbital trail color (RGBA, 0-1) */
-};
-
-struct lv_sign
-{
-    const char *symbol;
-    const char *name;
-    lv_color color;
-};
-
-static lv_oid data[10] = {
+lv_oid data[10] = {
     { 0, "☉", "Sun",        1000000,    695700,      0.000, { 1.00, 0.84, 0.00, 1.0 } }, // golden-yellow photosphere
     { 1, "☿", "Mercury",   57909227,      4879,     87.969, { 0.60, 0.60, 0.60, 1.0 } }, // mid-grey, rocky
     { 2, "♀", "Venus",    108209475,     12104,    224.701, { 0.96, 0.89, 0.70, 1.0 } }, // pale golden cream
@@ -155,7 +67,9 @@ static lv_oid data[10] = {
     { 9, "♇", "Pluto",   5906376272,      2377,  90560.000, { 0.72, 0.62, 0.57, 1.0 } }  // light brown-grey, icy patches
 };
 
-static lv_sign signs[12] = {
+size_t oid_count = countof(data);
+
+lv_sign signs[12] = {
     { "♈", "Aries",       { 0.937, 0.325, 0.314, 1.000 } }, // U+2648
     { "♉", "Taurus",      { 1.000, 0.439, 0.263, 1.000 } }, // U+2649
     { "♊", "Gemini",      { 1.000, 0.655, 0.149, 1.000 } }, // U+264A
@@ -170,15 +84,13 @@ static lv_sign signs[12] = {
     { "♓", "Pisces",      { 0.925, 0.251, 0.478, 1.000 } }  // U+2653
 };
 
-static const int font_sizes[] = {
-    8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72
-};
+size_t sign_count = countof(signs);
 
-static const char* ephembra_data_file = "build/data/DE440Coeff.bin";
-static const char* ephembra_sans_font = "resources/fonts/DejaVuSans.ttf";
-static const char* ephembra_mono_font = "resources/fonts/DejaVuSansMono.ttf";
-static const char* ephembra_awes_font = "resources/fonts/fontawesome-webfont.ttf";
-static const char* ephembra_image_tmpl = "resources/images/%s.png";
+const char* ephembra_data_file = "build/data/DE440Coeff.bin";
+const char* ephembra_sans_font = "resources/fonts/DejaVuSans.ttf";
+const char* ephembra_mono_font = "resources/fonts/DejaVuSansMono.ttf";
+const char* ephembra_awes_font = "resources/fonts/fontawesome-webfont.ttf";
+const char* ephembra_image_tmpl = "resources/images/%s.png";
 
 static const float min_zoom = 2.0f, max_zoom = 2048.0f;
 static const float global_scale = 1e12;
@@ -194,7 +106,7 @@ static lv_color white = { 0.8157, 0.8157, 0.8157, 1.0 };
  * gldemo
  */
 
-static void lv_app_init(lv_app *app)
+void lv_app_init(lv_app *app)
 {
     memset(app, 0, sizeof(app));
     app->zoom = 16.0f;
@@ -231,33 +143,13 @@ static void lv_app_init(lv_app *app)
     app->zodiac_scale = 9.0f;
 }
 
-static void lv_vg_uinit(lv_app* app)
-{
-    app->ctx_nanovg = (lv_context*)calloc(1, sizeof(lv_context));
-    app->ctx_buffer = (lv_context*)calloc(1, sizeof(lv_context));
-    app->ctx_xform = (lv_context*)calloc(1, sizeof(lv_context));
-    lv_vg_init(app->ctx_nanovg, &lv_nanovg_vg_ops, NULL);
-    lv_vg_init(app->ctx_buffer, &lv_buffer_vg_ops, NULL);
-    lv_vg_init(app->ctx_xform, &lv_xform_vg_ops, app->ctx_nanovg);
-}
-
-static void lv_vg_udestroy(lv_app* app)
-{
-    lv_vg_destroy(app->ctx_nanovg);
-    lv_vg_destroy(app->ctx_buffer);
-    lv_vg_destroy(app->ctx_xform);
-    free(app->ctx_nanovg);
-    free(app->ctx_buffer);
-    free(app->ctx_xform);
-}
-
-static void lv_update_date(lv_app *app)
+void lv_update_date(lv_app *app)
 {
     app->jd = app->cjd + app->cjdf + 0.5;
     app->date = lv_julian_to_date(app->jd);
 }
 
-static void lv_current_date(lv_app *app)
+void lv_current_date(lv_app *app)
 {
     time_t t = time(NULL);
     struct tm *tm = gmtime(&t);
@@ -266,7 +158,7 @@ static void lv_current_date(lv_app *app)
     lv_update_date(app);
 }
 
-static void lv_ephem_init(lv_app *app)
+void lv_ephem_init(lv_app *app)
 {
     NVGcontext *vg = *(NVGcontext**)app->ctx_nanovg->priv;
 
@@ -285,7 +177,7 @@ static void lv_ephem_init(lv_app *app)
     }
 }
 
-static void lv_ephem_destroy(lv_app *app)
+void lv_ephem_destroy(lv_app *app)
 {
     NVGcontext *vg = *(NVGcontext**)app->ctx_nanovg->priv;
 
@@ -299,32 +191,7 @@ static void lv_ephem_destroy(lv_app *app)
     free(app->eph);
 }
 
-static size_t lv_steps(lv_app *app) { return app->steps; }
-
-static size_t lv_edges(lv_app *app) { return app->steps / app->divs; }
-
-static double* lv_ephem_object(lv_app *app, size_t oid, size_t idx)
-{
-    return app->eph + oid * app->steps * 3 + (idx % app->steps) * 3;
-}
-
-static inline void lv_ephem_object_vec3(lv_app *app, size_t oid, size_t idx,
-    vec3 r, float s)
-{
-    double *o = lv_ephem_object(app, oid, idx);
-    r[0] = (float)o[0] * s;
-    r[1] = (float)o[1] * s;
-    r[2] = (float)o[2] * s;
-}
-
-static inline void lv_ephem_object_shift_vec3(lv_app *app, size_t oid, size_t idx,
-    vec3 r, vec3 b, float f, float s)
-{
-    lv_ephem_object_vec3(app, oid, idx, r, s);
-    vec3_multiply_add(r, b, f, r);
-}
-
-static void lv_ephem_calc(lv_app *app, double jd)
+void lv_ephem_calc(lv_app *app, double jd)
 {
     for (size_t oid = 1; oid < countof(data); oid++)
     {
@@ -339,7 +206,7 @@ static void lv_ephem_calc(lv_app *app, double jd)
     }
 }
 
-static void lv_iau2006_dynamic_matrix(lv_app *app, mat4x4 m)
+void lv_iau2006_dynamic_matrix(lv_app *app, mat4x4 m)
 {
     if (app->precession) {
         lv_iau2006_combined_matrix(m, app->jd);
@@ -348,7 +215,7 @@ static void lv_iau2006_dynamic_matrix(lv_app *app, mat4x4 m)
     }
 }
 
-static void lv_iau2006_dynamic_basis(lv_app *app, vec3 x0, vec3 y0, vec3 z0)
+void lv_iau2006_dynamic_basis(lv_app *app, vec3 x0, vec3 y0, vec3 z0)
 {
     if (app->precession) {
         lv_iau2006_combined_basis(x0, y0, z0, app->jd);
@@ -382,7 +249,7 @@ static int lv_oid_zsort(const void *p1, const void *p2)
     else return 0;
 }
 
-static void lv_grid_3d(lv_app *app, lv_context* ctx)
+void lv_grid_3d(lv_app *app, lv_context* ctx)
 {
     float f = global_scale * app->zodiac_offset;
     float g = global_scale * app->grid_scale;
@@ -431,7 +298,7 @@ static void lv_grid_3d(lv_app *app, lv_context* ctx)
     }
 }
 
-static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
+void lv_zodiac_3d(lv_app *app, lv_context* ctx)
 {
     float f = global_scale * app->zodiac_offset;
     float g = global_scale * app->zodiac_scale;
@@ -482,7 +349,7 @@ static void lv_zodiac_3d(lv_app *app, lv_context* ctx)
     }
 }
 
-static void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
+void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
 {
     NVGcontext *vg = *(NVGcontext**)app->ctx_nanovg->priv;
 
@@ -526,7 +393,7 @@ static void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
     }
 }
 
-static void lv_planets_3d(lv_app *app, lv_context* ctx)
+void lv_planets_3d(lv_app *app, lv_context* ctx)
 {
     float f = global_scale * app->zodiac_offset;
     vec4 x0, y0, z0;
@@ -559,7 +426,7 @@ static void lv_planets_3d(lv_app *app, lv_context* ctx)
     }
 }
 
-static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
+void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
 {
     NVGcontext *vg = *(NVGcontext**)app->ctx_nanovg->priv;
 
@@ -650,8 +517,8 @@ static void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
     }
 }
 
-static void model_matrix_transform(lv_app *app, vec3 scale, vec3 trans,
-    vec3 rot, float r)
+static inline void model_matrix_transform(lv_app *app,
+    vec3 scale, vec3 trans, vec3 rot, float r)
 {
     mat4x4 m_model, m_proj;
     mat4x4 r_frame, r_inv;
@@ -671,7 +538,7 @@ static void model_matrix_transform(lv_app *app, vec3 scale, vec3 trans,
     mat4x4_invert(app->m_inv, app->m_mvp);
 }
 
-static void lv_render(lv_app* app, float w, float h, float r)
+void lv_render(lv_app* app, float w, float h, float r)
 {
     vec3 rot = { app->rot[0], app->rot[1], app->rot[2] };
     vec3 scale = { 1/global_scale, 1/global_scale, 1/global_scale };
@@ -742,220 +609,6 @@ static void lv_render(lv_app* app, float w, float h, float r)
     lv_planets_2d(app, ctx, w, h);
 
     lv_vg_end_frame(ctx);
-}
-
-void lv_date_picker(lv_date *date)
-{
-    int dim;
-
-    ImGui::Text("Date:");
-    ImGui::SameLine();
-    ImGui::PushItemWidth(200);
-    ImGui::InputInt("YYYY", &date->year);
-
-    if (date->year < 1700) {
-        date->year = 1700;
-        date->month = 1;
-        date->day = 1;
-    } else if (date->year > 2399) {
-        date->year = 2399;
-        date->month = 12;
-        date->day = 31;
-    }
-
-    ImGui::PopItemWidth();
-    ImGui::PushItemWidth(150);
-    ImGui::SameLine();
-    ImGui::InputInt("MM", &date->month);
-
-    if (date->month < 1) {
-        date->year--;
-        date->month = 12;
-        if (date->year < 1700) {
-            date->year = 1700;
-            date->month = 1;
-            date->day = 1;
-        }
-    } else if (date->month > 12) {
-        date->year++;
-        date->month = 1;
-        if (date->year > 2399) {
-            date->year = 2399;
-            date->month = 12;
-            date->day = 31;
-        }
-    }
-
-    ImGui::SameLine();
-    ImGui::InputInt("DD", &date->day);
-    ImGui::PopItemWidth();
-
-    dim = lv_days_in_month(date->year, date->month-1);
-    if (date->day < 1) {
-        date->month--;
-        if (date->month < 1) {
-            date->year--;
-            date->month = 12;
-            if (date->year < 1700) {
-                date->year = 1700;
-                date->month = 1;
-                date->day = 1;
-            } else {
-                date->day = lv_days_in_month(date->year, date->month-1);
-            }
-        } else {
-            date->day = lv_days_in_month(date->year, date->month-1);
-        }
-    } else if (date->day > dim) {
-        date->month++;
-        if (date->month > 12) {
-            date->month = 1;
-            date->year++;
-            if (date->year > 2399) {
-                date->year = 2399;
-                date->month = 12;
-                date->day = 31;
-            } else {
-                date->day = 1;
-            }
-        } else {
-            date->day = 1;
-        }
-    }
-}
-
-static void lv_font_size(const char *label, int *font_size)
-{
-    char font_size_str[16];
-    snprintf(font_size_str, sizeof(font_size_str), "%u", *font_size);
-
-    if (ImGui::BeginCombo(label, font_size_str)) {
-        for (int i = 0; i < IM_ARRAYSIZE(font_sizes); i++)
-        {
-            bool sel = (*font_size == font_sizes[i]);
-            snprintf(font_size_str, sizeof(font_size_str), "%u", font_sizes[i]);
-            if (ImGui::Selectable(font_size_str, sel)) {
-                *font_size = font_sizes[i];
-            }
-            if (sel) {
-                ImGui::SetItemDefaultFocus();
-            }
-        }
-        ImGui::EndCombo();
-    }
-}
-
-static void lv_imgui(lv_app* app, float w, float h, float r)
-{
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-
-    ImGui::NewFrame();
-    ImGui::Begin("Controller", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::PushItemWidth(1000.0f);
-    if (ImGui::SliderInt("Julian Date", &app->cjd, app->sjd, app->ejd)) {
-        lv_update_date(app);
-    }
-    if (ImGui::SliderInt("Fine Adjust", &app->cjdf, app->sjdf, app->ejdf)) {
-        lv_update_date(app);
-    }
-    ImGui::PopItemWidth();
-    if (ImGui::Button(app->playback  ? "\uf04c##playback"
-                                     : "\uf04b##playback", ImVec2(36, 36))) {
-        app->playback = !app->playback;
-    }
-    ImGui::SameLine();
-    lv_date_picker(&app->date);
-    ImGui::End();
-
-    ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("Model");
-    ImGui::Separator();
-    ImGui::Checkbox("IAU 2006 Precession", &app->precession);
-    ImGui::SliderFloat("Rotate X", &app->rot[0], -180.0f, 180.0f);
-    ImGui::SliderFloat("Rotate Y", &app->rot[1], -180.0f, 180.0f);
-    ImGui::SliderFloat("Rotate Z", &app->rot[2], -180.0f, 180.0f);
-    ImGui::SliderFloat("Translate X", &app->trans[0], -10.0f, 10.0f);
-    ImGui::SliderFloat("Translate Y", &app->trans[1], -10.0f, 10.0f);
-    ImGui::SliderFloat("Translate Z", &app->trans[2], -10.0f, 10.0f);
-
-    ImGui::Text("Style");
-    ImGui::Separator();
-    ImGui::Checkbox("Cartoon Scaling", &app->cartoon);
-    ImGui::SliderFloat("Trail Width", &app->trail_width, 0.0f, 12.0f);
-    ImGui::SliderFloat("Line Width", &app->line_width, 0.0f, 6.0f);
-    ImGui::SliderFloat("Planet Scale", &app->planet_scale, 0.0f, 5.0f);
-    lv_font_size("Font Size", &app->font_size);
-    lv_font_size("Symbol Size", &app->symbol_size);
-
-    ImGui::Text("Grid");
-    ImGui::Separator();
-    ImGui::Checkbox("Grid Layer", &app->grid_layer);
-    ImGui::SliderInt("Grid Divisions", &app->grid_steps, 1, 20);
-    ImGui::SliderFloat("Grid Scale", &app->grid_scale, 0.0f, 20.0f);
-
-    ImGui::Text("Zodiac");
-    ImGui::Separator();
-    ImGui::Checkbox("Zodiac Layer", &app->zodiac_layer);
-    ImGui::SliderFloat("Symbol Offset", &app->symbol_offset, -0.1f, 0.1f);
-    ImGui::SliderFloat("Zodiac Offset", &app->zodiac_offset, 0.0f, 20.0f);
-    ImGui::SliderFloat("Zodiac Scale", &app->zodiac_scale, 0.0f, 20.0f);
-
-    ImGui::Text("Legends");
-    ImGui::Separator();
-    ImGui::Checkbox("Symbols", &app->sym_legend);
-    ImGui::Checkbox("Names", &app->name_legend);
-    ImGui::Checkbox("Distances", &app->dist_legend);
-
-    ImGui::End();
-
-    ImGui::Begin("Chart", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-    if (ImGui::BeginTable("Chart", 3))
-    {
-        mat4x4 m, im;
-        vec3 e, o, d;
-        vec4 q, p;
-        float a;
-        int deg, min, sid;
-
-        ImGui::TableSetupColumn("Planet");
-        ImGui::TableSetupColumn("Pos");
-        ImGui::TableSetupColumn("Sign");
-        ImGui::TableHeadersRow();
-
-        lv_ephem_object_vec3(app, ephem_id_EarthMoon, 0, e, 1.0f);
-        lv_iau2006_dynamic_matrix(app, m);
-        mat4x4_invert(im, m);
-
-        for (size_t oid = 0; oid < countof(data); oid++)
-        {
-            if (oid == ephem_id_EarthMoon) continue;
-
-            lv_ephem_object_vec3(app, oid, 0, o, 1.0);
-            vec3_sub(d, o, e);
-            vec4_vec3_w1(q, d);
-            mat4x4_mul_vec4(p, im, q);
-            a = vector_angle_deg(p[0], p[1]);
-
-            deg = (int)floorf(a);
-            min = (int)floorf((a - deg) * 60.0);
-            sid = deg / 30;
-
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-            ImGui::Text("%s %s", data[oid].symbol, data[oid].name);
-            ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%3d°%02d′", deg, min);
-            ImGui::TableSetColumnIndex(2);
-            ImGui::Text("%s %s", signs[sid].symbol, signs[sid].name);
-        }
-        ImGui::EndTable();
-    }
-    ImGui::End();
-
-    ImGui::Render();
-
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 static int mouse_find_oid(lv_app *app, vec2f pos,
@@ -1045,9 +698,7 @@ static void lv_save_screenshot(int w, int h, const char* filename)
     glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, image);
     image_set_alpha(image, w, h, w*4, 255);
     image_flip_horiz(image, w, h, w*4);
-#ifdef STB_IMAGE_WRITE_IMPLEMENTATION
     stbi_write_png(filename, w, h, 4, image, w*4);
-#endif
     free(image);
 }
 
@@ -1257,7 +908,7 @@ static void errorcb(int error, const char* desc)
     lv_error("GLFW error %d: %s\n", error, desc);
 }
 
-void gllv_app(int argc, char **argv)
+void lv_app_main(int argc, char **argv)
 {
     GLFWwindow* window;
     lv_app app;
@@ -1290,24 +941,7 @@ void gllv_app(int argc, char **argv)
     glfwSwapInterval(0);
     glfwSetTime(0);
 
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGui::StyleColorsDark();
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 130");
-
-    ImFontConfig icons_config;
-    icons_config.MergeMode = true;
-    icons_config.PixelSnapH = true;
-    ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 };
-
-    ImGuiIO& io = ImGui::GetIO();
-    io.Fonts->Clear();
-    io.Fonts->AddFontFromFileTTF(ephembra_mono_font, 14.0f);
-    io.Fonts->AddFontFromFileTTF(ephembra_awes_font, 14.0f,
-        &icons_config, icons_ranges);
-    io.Fonts->Build();
-    io.FontGlobalScale = app.ui_scale;
+    lv_app_imgui_init(&app);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1321,9 +955,7 @@ void gllv_app(int argc, char **argv)
     lv_ephem_destroy(&app);
     lv_vg_udestroy(&app);
 
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+    lv_app_imgui_destroy();
 
     glfwTerminate();
 }
@@ -1336,6 +968,6 @@ int main(int argc, char **argv)
 {
     lv_ll = lv_ll_info;
     parse_options(argc, argv);
-    gllv_app(argc, argv);
+    lv_app_main(argc, argv);
     return 0;
 }
