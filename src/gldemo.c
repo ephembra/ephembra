@@ -29,7 +29,14 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#ifdef HAVE_GLAD
 #include <glad/glad.h>
+#else
+#define gladLoadGL()
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#include <GL/glext.h>
+#endif
 #include <GLFW/glfw3.h>
 
 #include "demolib.h"
