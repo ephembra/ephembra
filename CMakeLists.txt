@@ -13,8 +13,8 @@ if (HAVE_LIB_M)
     set(EXTRA_LIBS ${EXTRA_LIBS} m)
 endif (HAVE_LIB_M)
 
-find_package(PkgConfig)
-pkg_check_modules(GLFW3 glfw3)
+# Find GLFW3 library
+find_package(glfw3)
 
 # Find OpenGL library
 include(FindOpenGL)
@@ -71,10 +71,14 @@ if (EXTERNAL_GLFW)
     set(GLFW_LIBRARIES glfw3 pthread dl)
     include_directories(${GLFW_INCLUDE_DIRS})
     link_directories(${GLFW_LIBRARY_DIR})
-    list(APPEND GLFW_LIBS_ALL ${GLFW_LIBRARIES} ${EXTRA_LIBS} X11)
+    list(APPEND GLFW_LIBS_ALL ${GLFW_LIBRARIES} ${EXTRA_LIBS})
+    if(UNIX AND NOT APPLE)
+        find_package(X11 REQUIRED)
+        list(APPEND GLFW_LIBS_ALL X11::X11)
+        include_directories(${X11_INCLUDE_DIR})
+    endif()
 else ()
-    add_definitions(${GLFW3_CFLAGS})
-    list(APPEND GLFW_LIBS_ALL ${GLFW3_LDFLAGS} ${EXTRA_LIBS})
+    list(APPEND GLFW_LIBS_ALL glfw ${EXTRA_LIBS})
 endif ()
 
 # Support for external glad
@@ -100,13 +104,9 @@ else ()
 endif ()
 
 # Find FreeType2 library
-find_package(PkgConfig)
-pkg_check_modules(FT2 freetype2)
-if (${FT2_FOUND})
-  list(APPEND GLFW_LIBS_ALL ${FT2_LIBRARIES})
-else()
-  message(ERROR "can't find freetype2")
-endif()
+find_package(Freetype REQUIRED)
+list(APPEND GLFW_LIBS_ALL Freetype::Freetype)
+include_directories(${FREETYPE_INCLUDE_DIRS})
 
 # macro to add opengl example
 macro(gl_cprogram prog)
@@ -169,7 +169,7 @@ target_link_libraries(demo PRIVATE ephembra)
 add_executable(convert util/convert.c)
 target_link_libraries(convert PRIVATE z matio ephembra)
 
-list(APPEND GLFW_LIBS_ALL z matio ephembra nanovg imgui ${FT2_LIBRARIES})
+list(PREPEND GLFW_LIBS_ALL z matio ephembra nanovg imgui)
 add_executable(gldemo
     src/glui.cc
     src/gldemo.c
