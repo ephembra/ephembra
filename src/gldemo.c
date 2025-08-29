@@ -108,7 +108,7 @@ static lv_color white = { 0.8157, 0.8157, 0.8157, 1.0 };
 
 void lv_app_init(lv_app *app)
 {
-    memset(app, 0, sizeof(app));
+    memset(app, 0, sizeof(lv_app));
     app->zoom = 16.0f;
     app->rot[0] = 65.0f;
     app->rot_oid = -1;
