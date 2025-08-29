@@ -160,13 +160,12 @@ add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD)
 add_library(imgui STATIC ${IMGUI_SOURCES})
 
 include_directories(include)
-add_library(ephembra src/ephembra.c
-    ${ephembra_data_file})
+add_library(ephembra lib/ephembra.c ${ephembra_data_file})
 
-add_executable(demo src/demo.c)
+add_executable(demo util/demo.c)
 target_link_libraries(demo PRIVATE ephembra)
 
-add_executable(convert src/convert.c)
+add_executable(convert util/convert.c)
 target_link_libraries(convert PRIVATE z matio ephembra)
 
 list(APPEND GLFW_LIBS_ALL z matio ephembra nanovg imgui ${FT2_LIBRARIES})
