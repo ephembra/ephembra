@@ -12,6 +12,16 @@ MATLAB coefficients from [NASA JPL Development Ephemerides DE440](https://www.re
 
 ## build instructions
 
+ephembra has been tested on the following operating systems:
+
+- Ubuntu 24.04 LTS
+- FreeBSD 14.3
+
+ephembra should work on the following operating systems:
+
+- Windows 11
+- macOS 15
+
 ```
 cmake -B build -G Ninja
 cmake --build build
