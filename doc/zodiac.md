@@ -54,10 +54,10 @@ this is what I started with but it is not sufficient:
 map angles from a point (x0, y0) inside of a circle of radius 'r'
 relative to center origin (0, 0) to points on the circumference.
 
-  • θ (theta): central angle from (0,0) to point on circle [0, 2π).
-  • φ (phi): ray angle from (x0,y0) to point on circle [0, 2π).
+- θ (theta): central angle from (0,0) to point on circle [0, 2π).
+- φ (phi): ray angle from (x0,y0) to point on circle [0, 2π).
 
 domain: |(x0,y0)| < r, r > 0, results normalized to [0, 2π)
 
-forward: θ → φ:   phi = atan2(r*sinθ - y0, r*cosθ - x0)
-inverse: φ → θ:   theta = phi + arcsin((y0*cosφ - x0*sinφ)/r)
+- forward: θ → φ:   phi = atan2(r*sinθ - y0, r*cosθ - x0)
+- inverse: φ → θ:   theta = phi + arcsin((y0*cosφ - x0*sinφ)/r)
