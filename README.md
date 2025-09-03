@@ -20,7 +20,10 @@ Ephemerides DE440][DE440].
 
 ## coordinate systems
 
-ephembra relies on coordinate transforms from several reference frames.
+ephembra relies on coordinate transforms from several reference frames:
+
+- rest frame using the International Celestial Reference System.
+- ecliptic frame using IAU 2006 obliquity and precession.
 
 ### rest frame
 
