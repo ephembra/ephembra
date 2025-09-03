@@ -20,7 +20,8 @@ the demo uses an interactive animation to illustrate the contrast between:
 - geocentric model: Earth-centered view of the zodiac.
 
 the ephemeris is ported from the MATLAB code in [NASA JPL Development
-Ephemerides DE440][DE440].
+Ephemerides DE440][DE440]. JPL DE440 is NASA’s latest high-precision
+planetary ephemeris.
 
 ## coordinate systems
 
@@ -123,3 +124,56 @@ ephembra should work on the following operating systems:
 cmake -B build -G Ninja
 cmake --build build
 ```
+
+## glossary
+
+**Ephemeris / Ephemerides**
+a dataset giving the positions of astronomical objects at specific times.
+
+**ICRS (International Celestial Reference System)**
+the standard astronomical coordinate system, based on an equatorial
+plane fixed relative to distant quasars.
+
+**SSB (Solar System Barycenter)**
+the center of mass around which all bodies in the solar system orbit.
+
+**Equatorial Plane**
+the plane formed by extending Earth’s equator into space.
+
+**Ecliptic Plane**
+the plane of Earth’s orbit around the Sun, tilted about 23.4° relative
+to the equator.
+
+**Obliquity**
+the tilt of Earth’s axis relative to its orbital plane (≈23.4°).
+
+**Precession**
+the slow shift of Earth’s rotational axis, causing the equinox points to
+drift along the ecliptic over thousands of years.
+
+**Nutation**
+short-term oscillations in Earth’s axis, superimposed on precession.
+
+**Mean Ecliptic of Date**
+the average position of Earth’s orbital plane at a given time, including
+precession and obliquity but not nutation.
+
+**Julian Date (JD)**
+a continuous count of days and fractions of days used in astronomy.
+
+**J2000.0**
+the reference epoch: January 1, 2000, 12:00 Terrestrial Time.
+
+**Quasi-inertial**
+a reference frame that is nearly fixed in space. the ICRS frame is
+quasi-inertial.
+
+**Heliocentric Model**
+the Sun-centered model of the solar system.
+
+**Geocentric Model**
+the Earth-centered model of the heavens, used in traditional zodiac
+representations.
+
+**Vernal Equinox**
+the point where the Sun crosses the celestial equator moving northward.
