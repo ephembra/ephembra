@@ -14,6 +14,10 @@ using OpenGL-style 4x4 matrices.
 the animated demo includes solar system objects with their orbit trails,
 with options for text legends, grid, and zodiac layers, plus controls for
 rendering parameters such as font size, line thickness, and zodiac offset.
+the demo uses an interactive animation to illustrate the contrast between:
+
+- heliocentric model: Sun-centered view of the solar system.
+- geocentric model: Earth-centered view of the zodiac.
 
 the ephemeris is ported from the MATLAB code in [NASA JPL Development
 Ephemerides DE440][DE440].
