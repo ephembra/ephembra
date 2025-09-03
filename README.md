@@ -60,7 +60,7 @@ an ecliptic-aligned frame suitable for zodiacal grids.
 ### cartoon scaling
 
 ephembra includes _"cartoon scaling"_, which scales solar system objects
-for an improved "perceptual" screen layout; otherwise the planets are
+for an improved "perceptual" screen layout; otherwise, the planets are
 too sparsely distributed to easily visualize the entire solar system.
 this introduces some rendering issues, described in [zodiac](doc/zodiac.md).
 
