@@ -33,8 +33,9 @@ ephembra relies on coordinate transforms from several reference frames:
 
 the JPL DE440 ephemerides are expressed in the [International Celestial
 Reference System][ICRS], a quasi-inertial reference frame centered on
-the [Solar System Barycenter][SSB]. in this frame, the origin is at the
-SSB with coordinates _(x,y,z) = (0,0,0)_.
+the [Solar System Barycenter][SSB] with an equatorial XY-plane. in this
+frame, the origin is at the Solar System Barycenter with coordinates
+_(x,y,z) = (0,0,0)_.
 
 the ICRS axes are fixed relative to distant quasars, independent of
 Earth’s orientation. for continuity with earlier systems, the ICRS is
@@ -50,12 +51,13 @@ and the Z-axis points perpendicular to the equatorial plane (up).
 
 ### ecliptic frame
 
-to render the grid on the Earth’s orbital plane within the solar system,
-ephembra applies a tilt followed by a rotation from the ICRS rest frame
-using the [IAU 2006 precession][IAU2006]. specifically, it applies the
-model’s mean obliquity (tilt) and precession (rotation) to obtain the _mean
-ecliptic of date_, i.e. the plane of Earth’s mean orbital motion around
-the Sun, used to center the zodiac.
+to render the grid on the Earth’s orbital plane, ephembra applies a tilt
+followed by a rotation from the ICRS rest frame using the [IAU 2006
+precession][IAU2006] to transform the equatorial plane to the ecliptic plane.
+
+specifically, it applies the model’s mean obliquity (tilt) and precession
+(rotation) to obtain the _mean ecliptic of date_, i.e. the plane of Earth’s
+mean orbital motion around the Sun, used to center the zodiac.
 
 for simplicity, nutation terms are omitted: only the obliquity
 and precession of the mean vernal equinox are applied. this produces
