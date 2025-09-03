@@ -64,6 +64,21 @@ for an improved "perceptual" screen layout; otherwise, the planets are
 too sparsely distributed to easily visualize the entire solar system.
 this introduces some rendering issues, described in [zodiac](doc/zodiac.md).
 
+## navigation
+
+- keyboard navigation
+  - (`W`, `A`, `Z`, `S`, `D`, `C`) = (_+x_, _+y_, _+z_, _-x_, _-y_, _-z_)
+  - (`ESC`, `P`) = (_exit_, _save-screenshot_)
+- mouse navigation
+  - scroll wheel = zoom Z-axis
+  - mouse click = object selection
+- user interface controls
+  - transform: IAU2006 precession, (X,Y,Z) rotation, (X,Y,Z) translation
+  - style: trail width, line width, planet scale, font size, symbol size
+  - grid: layer toggle, grid divisions, grid scale
+  - zodiac: layer toggle, symbol offset, zodiac offset, zodiac scale
+  - legends: symbols, names, distances
+
 ## build
 
 ephembra requires the following dependencies:
