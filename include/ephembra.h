@@ -32,7 +32,6 @@ struct ephem_ctx
 };
 
 enum {
-    ephem_id_Sun = 0,
     ephem_id_Mercury = 1,
     ephem_id_Venus = 2,
     ephem_id_EarthMoon = 3,
@@ -42,10 +41,12 @@ enum {
     ephem_id_Uranus = 7,
     ephem_id_Neptune = 8,
     ephem_id_Pluto = 9,
-    ephem_id_Moon = 10,
-    ephem_id_Nutations = 11,
-    ephem_id_Librations = 12,
-    ephem_id_Last = 13
+    ephem_id_Sun = 10,
+    ephem_id_Moon = 11,
+    ephem_id_Earth = 12,
+    ephem_id_Nutations = 13,
+    ephem_id_Librations = 14,
+    ephem_id_Last = 15
 };
 
 void de440_create_ephem(ephem_ctx *ctx, const char *ephem_bin);

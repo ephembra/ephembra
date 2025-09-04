@@ -296,13 +296,15 @@ void lv_imgui(lv_app* app, float w, float h, float r)
         ImGui::TableSetupColumn("Sign");
         ImGui::TableHeadersRow();
 
-        lv_ephem_object_vec3(app, ephem_id_EarthMoon, 0, e, 1.0f);
+        lv_ephem_object_vec3(app, ephem_id_Earth, 0, e, 1.0f);
         lv_iau2006_dynamic_matrix(app, m);
         mat4x4_invert(im, m);
 
-        for (size_t oid = 0; oid < oid_count; oid++)
+        for (size_t idx = 0; idx < idx_count; idx++)
         {
-            if (oid == ephem_id_EarthMoon) continue;
+            size_t oid = data[idx].oid;
+
+            if (oid == ephem_id_Earth) continue;
 
             lv_ephem_object_vec3(app, oid, 0, o, 1.0);
             vec3_sub(d, o, e);
@@ -316,7 +318,7 @@ void lv_imgui(lv_app* app, float w, float h, float r)
 
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
-            ImGui::Text("%s %s", data[oid].symbol, data[oid].name);
+            ImGui::Text("%s %s", data[idx].symbol, data[idx].name);
             ImGui::TableSetColumnIndex(1);
             ImGui::Text("%3d°%02d′", deg, min);
             ImGui::TableSetColumnIndex(2);

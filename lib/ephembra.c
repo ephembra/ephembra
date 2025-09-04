@@ -44,24 +44,24 @@ struct de440_idx
     size_t offset;
 };
 
-const char* ephem_name[13] = {
-    [ephem_id_Sun]          = "Sun",
+const char* ephem_name[15] = {
     [ephem_id_Mercury]      = "Mercury",
     [ephem_id_Venus]        = "Venus",
-    [ephem_id_EarthMoon]    = "Earth",
+    [ephem_id_EarthMoon]    = "EarthMoon",
     [ephem_id_Mars]         = "Mars",
     [ephem_id_Jupiter]      = "Jupiter",
     [ephem_id_Saturn]       = "Saturn",
     [ephem_id_Uranus]       = "Uranus",
     [ephem_id_Neptune]      = "Neuptune",
     [ephem_id_Pluto]        = "Pluto",
+    [ephem_id_Sun]          = "Sun",
     [ephem_id_Moon]         = "Moon",
+    [ephem_id_Earth]        = "Earth",
     [ephem_id_Nutations]    = "Nutations",
     [ephem_id_Librations]   = "Librations"
 };
 
-const de440_idx ephem_idx[13] = {
-    [ephem_id_Sun]          = { 753, 11, 786, 16, 33 },
+const de440_idx ephem_idx[15] = {
     [ephem_id_Mercury]      = {   3, 14,  45,  8, 42 },
     [ephem_id_Venus]        = { 171, 10, 201, 16, 30 },
     [ephem_id_EarthMoon]    = { 231, 13, 270, 16, 39 },
@@ -71,6 +71,7 @@ const de440_idx ephem_idx[13] = {
     [ephem_id_Uranus]       = { 387,  6, 405, 32,  0 },
     [ephem_id_Neptune]      = { 405,  6, 423, 32,  0 },
     [ephem_id_Pluto]        = { 423,  6, 441, 32,  0 },
+    [ephem_id_Sun]          = { 753, 11, 786, 16, 33 },
     [ephem_id_Moon]         = { 441, 13, 480,  4, 39 },
     [ephem_id_Nutations]    = { 819, 10, 839,  8, 20 },
     [ephem_id_Librations]   = { 899, 10, 929,  8, 30 }
@@ -227,8 +228,8 @@ size_t de440_find_row(ephem_ctx *ctx, double jd)
     return de440_cmp(ctx, jd, begin) == 0 ? begin : -1;
 }
 
-void de440_ephem_obj(ephem_ctx *ctx, double jd, size_t row, size_t oid, 
-    double *obj)
+static void de440_ephem_obj_internal(ephem_ctx *ctx, double jd,
+    size_t row, size_t oid, double *obj)
 {
     if (row == -1) {
         obj[0] = NAN; obj[1] = NAN; obj[2] = NAN;
@@ -236,6 +237,34 @@ void de440_ephem_obj(ephem_ctx *ctx, double jd, size_t row, size_t oid,
         de440_ephem_body(ctx, jd, row, ephem_idx[oid].start,
             ephem_idx[oid].addend, ephem_idx[oid].end,
             ephem_idx[oid].step, ephem_idx[oid].offset, obj);
+    }
+}
+
+#define EMRAT 81.3005682214972154
+#define EMRAT1 (1.0/(1.0+EMRAT))
+
+void de440_ephem_obj(ephem_ctx *ctx, double jd,
+    size_t row, size_t oid, double *obj)
+{
+    double t0[3], t1[3];
+    switch (oid) {
+    case ephem_id_Earth:
+        de440_ephem_obj_internal(ctx, jd, row, ephem_id_EarthMoon, t0);
+        de440_ephem_obj_internal(ctx, jd, row, ephem_id_Moon, t1);
+        obj[0] = t0[0] - t1[0] * EMRAT1;
+        obj[1] = t0[1] - t1[1] * EMRAT1;
+        obj[2] = t0[2] - t1[2] * EMRAT1;
+        break;
+    case ephem_id_Moon:
+        de440_ephem_obj_internal(ctx, jd, row, ephem_id_EarthMoon, t0);
+        de440_ephem_obj_internal(ctx, jd, row, ephem_id_Moon, t1);
+        obj[0] = t0[0] + t1[0];
+        obj[1] = t0[1] + t1[1];
+        obj[2] = t0[2] + t1[2];
+        break;
+    default:
+        de440_ephem_obj_internal(ctx, jd, row, oid, obj);
+        break;
     }
 }
 

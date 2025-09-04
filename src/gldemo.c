@@ -61,20 +61,32 @@
 
 #define countof(arr) (sizeof(arr)/sizeof(arr[0]))
 
-lv_oid data[10] = {
-    { 0, "☉", "Sun",        1000000,    695700,      0.000, { 1.00, 0.84, 0.00, 1.0 } }, // golden-yellow photosphere
-    { 1, "☿", "Mercury",   57909227,      4879,     87.969, { 0.60, 0.60, 0.60, 1.0 } }, // mid-grey, rocky
-    { 2, "♀", "Venus",    108209475,     12104,    224.701, { 0.96, 0.89, 0.70, 1.0 } }, // pale golden cream
-    { 3, "♁", "Earth",    149598023,     12742,    365.256, { 0.27, 0.55, 0.68, 1.0 } }, // blue-green oceans/land
-    { 4, "♂", "Mars",     227939200,      6779,    686.980, { 0.70, 0.40, 0.35, 1.0 } }, // reddish-orange dusty soil
-    { 5, "♃", "Jupiter",  778340821,    139820,   4332.589, { 0.87, 0.72, 0.53, 1.0 } }, // beige bands with light brown
-    { 6, "♄", "Saturn",  1426666422,    116460,  10759.220, { 0.93, 0.85, 0.63, 1.0 } }, // pale yellow-brown
-    { 7, "♅", "Uranus",  2870658186,     50724,  30687.000, { 0.56, 0.75, 0.82, 1.0 } }, // pale cyan
-    { 8, "♆", "Neptune", 4498396441,     49244,  60190.000, { 0.28, 0.35, 0.68, 1.0 } }, // deep azure blue
-    { 9, "♇", "Pluto",   5906376272,      2377,  90560.000, { 0.72, 0.62, 0.57, 1.0 } }  // light brown-grey, icy patches
+lv_oid data[11] = {
+    { ephem_id_Sun,     "☉", "Sun",        1000000,    695700,      0.000,
+      { 1.00, 0.84, 0.00, 1.0 } }, // golden-yellow photosphere
+    { ephem_id_Moon,    "☽", "Moon",     149598023,      3474,     27.320,
+      { 0.75, 0.75, 0.75, 1.0 } }, // pale grey
+    { ephem_id_Mercury, "☿", "Mercury",   57909227,      4879,     87.969,
+      { 0.60, 0.60, 0.60, 1.0 } }, // mid-grey, rocky
+    { ephem_id_Venus,   "♀", "Venus",    108209475,     12104,    224.701,
+      { 0.96, 0.89, 0.70, 1.0 } }, // pale golden cream
+    { ephem_id_Earth,   "♁", "Earth",    149598023,     12742,    365.256,
+      { 0.27, 0.55, 0.68, 1.0 } }, // blue-green oceans/land
+    { ephem_id_Mars,    "♂", "Mars",     227939200,      6779,    686.980,
+      { 0.70, 0.40, 0.35, 1.0 } }, // reddish-orange dusty soil
+    { ephem_id_Jupiter, "♃", "Jupiter",  778340821,    139820,   4332.589,
+      { 0.87, 0.72, 0.53, 1.0 } }, // beige bands with light brown
+    { ephem_id_Saturn,  "♄", "Saturn",  1426666422,    116460,  10759.220,
+      { 0.93, 0.85, 0.63, 1.0 } }, // pale yellow-brown
+    { ephem_id_Uranus,  "♅", "Uranus",  2870658186,     50724,  30687.000,
+      { 0.56, 0.75, 0.82, 1.0 } }, // pale cyan
+    { ephem_id_Neptune, "♆", "Neptune", 4498396441,     49244,  60190.000,
+      { 0.28, 0.35, 0.68, 1.0 } }, // deep azure blue
+    { ephem_id_Pluto,   "♇", "Pluto",   5906376272,      2377,  90560.000,
+      { 0.72, 0.62, 0.57, 1.0 } }, // light brown-grey, icy patches
 };
 
-size_t oid_count = countof(data);
+size_t idx_count = countof(data);
 
 lv_sign signs[12] = {
     { "♈", "Aries",       { 0.937, 0.325, 0.314, 1.000 } }, // U+2648
@@ -171,16 +183,16 @@ void lv_ephem_init(lv_app *app)
 
     lv_current_date(app);
     de440_create_ephem(&app->ctx, ephembra_data_file);
-    app->eph = (double*)malloc(countof(data) * app->steps * sizeof(double) * 3);
+    app->eph = (double*)malloc(ephem_id_Last * app->steps * sizeof(double) * 3);
     app->images = (int*)malloc(countof(data) * sizeof(int));
     nvgCreateFont(vg, "mono", ephembra_mono_font);
     nvgCreateFont(vg, "sans", ephembra_sans_font);
 
-    for (size_t oid = 0; oid < countof(data); oid++)
+    for (size_t idx = 0; idx < countof(data); idx++)
     {
         char path[64];
-        snprintf(path, sizeof(path), ephembra_image_tmpl, data[oid].name);
-        app->images[oid] = nvgCreateImage(vg, path, NVG_IMAGE_GENERATE_MIPMAPS);
+        snprintf(path, sizeof(path), ephembra_image_tmpl, data[idx].name);
+        app->images[idx] = nvgCreateImage(vg, path, NVG_IMAGE_GENERATE_MIPMAPS);
     }
 }
 
@@ -188,8 +200,8 @@ void lv_ephem_destroy(lv_app *app)
 {
     NVGcontext *vg = *(NVGcontext**)app->ctx_nanovg->priv;
 
-    for (size_t oid = 0; oid < countof(data); oid++) {
-        nvgDeleteImage(vg, app->images[oid]);
+    for (size_t idx = 0; idx < countof(data); idx++) {
+        nvgDeleteImage(vg, app->images[idx]);
     }
 
     de440_destroy_ephem(&app->ctx);
@@ -200,11 +212,12 @@ void lv_ephem_destroy(lv_app *app)
 
 void lv_ephem_calc(lv_app *app, double jd)
 {
-    for (size_t oid = 1; oid < countof(data); oid++)
+    for (size_t idx = 0; idx < countof(data); idx++)
     {
+        size_t oid = data[idx].oid;
         for (size_t i = 0; i < app->steps; i++)
         {
-            double interval = data[oid].orbit / app->steps;
+            double interval = data[idx].orbit / app->steps;
             double tjd = jd - (i * interval);
             size_t row = de440_find_row(&app->ctx, tjd);
             double *o = lv_ephem_object(app, oid, i);
@@ -231,20 +244,28 @@ void lv_iau2006_dynamic_basis(lv_app *app, vec3 x0, vec3 y0, vec3 z0)
     }
 }
 
-static inline lv_color lv_oid_color(lv_app* app, size_t oid, float alpha)
+static inline lv_color lv_idx_color(lv_app* app, size_t idx, float alpha)
 {
-    lv_color color = lv_color_af(data[oid].color, alpha);
-    if (oid == app->rot_oid) {
+    lv_color color = lv_color_af(data[idx].color, alpha);
+    if (data[idx].oid == app->rot_oid) {
         return lv_color_adjust(color, 1.5, 1.5);
     } else {
         return color;
     }
 }
 
-static inline float lv_oid_scale(bool cartoon, size_t oid)
+static inline float lv_idx_scale(bool cartoon, size_t idx)
 {
-    float r = (float)(data[oid].dist / data[ephem_id_Pluto].dist);
-    return cartoon ? ((oid + 1.0f) / countof(data)) / r : 1.0f;
+    float r = (float)(data[idx].dist / data[countof(data)-1].dist);
+    return cartoon ? (idx / 10.0f) / r : 1.0f;
+}
+
+static inline size_t lv_idx_for_oid(size_t oid)
+{
+    for (size_t idx = 0; idx < countof(data); idx++) {
+        if (data[idx].oid == oid) return idx;
+    }
+    return -1;
 }
 
 static int lv_oid_zsort(const void *p1, const void *p2)
@@ -309,11 +330,11 @@ void lv_zodiac_3d(lv_app *app, lv_context* ctx)
 {
     float f = global_scale * app->zodiac_offset;
     float g = global_scale * app->zodiac_scale;
-    float s = lv_oid_scale(app->cartoon, ephem_id_EarthMoon);
+    float s = lv_idx_scale(app->cartoon, lv_idx_for_oid(ephem_id_Earth));
     vec3 x0, y0, z0, p0;
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
-    lv_ephem_object_shift_vec3(app, ephem_id_EarthMoon, 0, p0, z0, f, s);
+    lv_ephem_object_shift_vec3(app, ephem_id_Earth, 0, p0, z0, f, s);
 
     for (int i = 0; i < 12; i++)
     {
@@ -336,9 +357,10 @@ void lv_zodiac_3d(lv_app *app, lv_context* ctx)
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
-    for (size_t oid = 0; oid < countof(data); oid++)
+    for (size_t idx = 0; idx < countof(data); idx++)
     {
-        float s = lv_oid_scale(app->cartoon, oid);
+        size_t oid = data[idx].oid;
+        float s = lv_idx_scale(app->cartoon, idx);
         vec3 p0, p1, p2, p3;
 
         lv_ephem_object_vec3(app, oid, 0, p0, s);
@@ -382,12 +404,15 @@ void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
         nvgText(vg, q[0], q[1], signs[i].symbol, NULL);
     }
 
-    for (size_t oid = 0; oid < countof(data); oid++)
+    for (size_t idx = 0; idx < countof(data); idx++)
     {
-        float s, x, y;
-        vec3 p0, p1, p2, q;
+        size_t oid = data[idx].oid;
 
-        s = lv_oid_scale(app->cartoon, oid);
+        if (oid == ephem_id_Moon) continue;
+
+        vec3 p0, p1, p2, q;
+        float s = lv_idx_scale(app->cartoon, idx);
+
         lv_ephem_object_vec3(app, oid, 0, p0, s);
         vec3_project_to_basis(p1, p0, x0, y0);
         vec3_multiply_add(p2, z0, f, p1);
@@ -408,9 +433,13 @@ void lv_planets_3d(lv_app *app, lv_context* ctx)
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
-    for (size_t oid = 0; oid < countof(data); oid++)
+    for (size_t idx = 0; idx < countof(data); idx++)
     {
-        float s = lv_oid_scale(app->cartoon, oid);
+        size_t oid = data[idx].oid;
+
+        if (oid == ephem_id_Moon) continue;
+
+        float s = lv_idx_scale(app->cartoon, idx);
 
         lv_vg_stroke_width(ctx, app->trail_width);
         for (size_t i = 0; i < lv_steps(app) + 1; i += lv_edges(app))
@@ -427,7 +456,7 @@ void lv_planets_3d(lv_app *app, lv_context* ctx)
                 if (p1[0] != p1[0]) break;
                 lv_vg_3d_line_to(ctx, lv_point_3d(p1[0], p1[1], p1[2]));
             }
-            lv_vg_stroke_color(ctx, lv_oid_color(app, oid, alpha));
+            lv_vg_stroke_color(ctx, lv_idx_color(app, idx, alpha));
             lv_vg_stroke(ctx);
         }
     }
@@ -444,36 +473,41 @@ void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
-    for (size_t oid = 0; oid < countof(data); oid++)
+    for (size_t idx = 0; idx < countof(data); idx++)
     {
         vec3 p0;
-        float s = lv_oid_scale(app->cartoon, oid);
+        size_t oid = data[idx].oid;
+        zidx[idx].idx = idx;
+        float s = lv_idx_scale(app->cartoon, idx);
         lv_ephem_object_shift_vec3(app, oid, 0, p0, z0, -f, s);
-        zidx[oid].oid = oid;
-        object_to_screen(zidx[oid].pos, p0, app->m_mvp, w, h);
+        object_to_screen(zidx[idx].pos, p0, app->m_mvp, w, h);
     }
 
     qsort(zidx, countof(data), sizeof(lv_oid_idx), lv_oid_zsort);
 
-    for (size_t idx = 0; idx < countof(data); idx++)
+    for (size_t i = 0; i < countof(data); i++)
     {
         lv_color color;
         NVGcolor vgc;
-        size_t oid;
+        size_t oid, idx;
         int img, iw, ih;
         float r, a, b, s, dw, dh, x, y;
-        vec4 q;
+        vec2 q;
 
-        oid = zidx[idx].oid;;
-        memcpy(q, zidx[idx].pos, sizeof(vec4));
+        idx = zidx[i].idx;
+        oid = data[idx].oid;
+        q[0] = zidx[i].pos[0];
+        q[1] = zidx[i].pos[1];
 
-        color = lv_oid_color(app, oid, 1.0f);
-        memcpy(&vgc, &color, sizeof(vgc));
+        if (oid == ephem_id_Moon) continue;
 
-        img = app->images[oid];
+        color = lv_idx_color(app, idx, 1.0f);
+        vgc = nvgRGBAf(color.r, color.g, color.b, color.a);
+
+        img = app->images[idx];
         nvgImageSize(vg, img, &iw, &ih);
 
-        r = data[oid].diameter / data[ephem_id_Jupiter].diameter;
+        r = data[idx].diameter / 139820.0; /* Jupiter */
         a = app->planet_scale / 50.0f;
         b = app->planet_scale / 25.0f;
         s = a + b * log10f(1.0f + 9.0f * r);
@@ -497,23 +531,23 @@ void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
 
         if (app->name_legend && app->sym_legend) {
             char name[64];
-            snprintf(name, sizeof(name), "%s %s", data[oid].symbol, data[oid].name);
+            snprintf(name, sizeof(name), "%s %s", data[idx].symbol, data[idx].name);
             nvgFontSize(vg, font_size);
             nvgText(vg, q[0], q[1] + v + ih * s * 0.5f, name, NULL);
             v += font_size * 1.5f;
         }
         else if (app->name_legend) {
             nvgFontSize(vg, font_size);
-            nvgText(vg, q[0], q[1] + v + ih * s * 0.5f, data[oid].name, NULL);
+            nvgText(vg, q[0], q[1] + v + ih * s * 0.5f, data[idx].name, NULL);
             v += font_size * 1.5f;
         }
         else if (app->sym_legend) {
             nvgFontSize(vg, symbol_size);
-            nvgText(vg, q[0], q[1] + v + ih * s * 0.5f, data[oid].symbol, NULL);
+            nvgText(vg, q[0], q[1] + v + ih * s * 0.5f, data[idx].symbol, NULL);
             v += font_size * 1.5f;
         }
 
-        if (app->dist_legend && oid > 0) {
+        if (app->dist_legend) {
             char dist[64];
             vec3 p0;
             lv_ephem_object_vec3(app, oid, 0, p0, 1.0f);
@@ -636,12 +670,13 @@ static int mouse_find_oid(lv_app *app, vec2f pos,
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
-    for (size_t oid = 1; oid < countof(data); oid++)
+    for (size_t idx = 0; idx < countof(data); idx++)
     {
-        float s = lv_oid_scale(app->cartoon, oid);
+        size_t oid = data[idx].oid;
+        float s = lv_idx_scale(app->cartoon, idx);
         for (size_t i = 0; i < lv_steps(app) - 1; i++)
         {
-            double interval = data[oid].orbit / lv_steps(app);
+            double interval = data[idx].orbit / lv_steps(app);
             double tjd = jd - (i * interval);
             double *o1 = lv_ephem_object(app, oid, i);
             double *o2 = lv_ephem_object(app, oid, i + 1);

@@ -83,7 +83,7 @@ struct lv_app
 
 struct lv_oid_idx
 {
-    size_t oid;
+    size_t idx;
     vec3 pos;
 };
 
@@ -112,7 +112,7 @@ extern const char* ephembra_awes_font;
 extern const char* ephembra_image_tmpl;
 
 extern lv_oid data[];
-extern size_t oid_count;
+extern size_t idx_count;
 extern lv_sign signs[];
 extern size_t sign_count;
 
