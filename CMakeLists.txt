@@ -173,6 +173,7 @@ list(PREPEND GLFW_LIBS_ALL z matio ephembra nanovg imgui)
 add_executable(gldemo
     src/glui.cc
     src/gldemo.c
+    src/demodata.c
     src/demolib.c
     src/stb_image.c
     src/nanovg_gles3.c)

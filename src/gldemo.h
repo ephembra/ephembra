@@ -25,9 +25,6 @@ extern "C" {
 #endif
 
 typedef struct lv_app lv_app;
-typedef struct lv_oid lv_oid;
-typedef struct lv_oid_idx lv_oid_idx;
-typedef struct lv_sign lv_sign;
 
 struct lv_app
 {
@@ -81,40 +78,11 @@ struct lv_app
     ephem_ctx ctx;
 };
 
-struct lv_oid_idx
-{
-    size_t idx;
-    vec3 pos;
-};
-
-struct lv_oid
-{
-    size_t oid;         /* object ID */
-    const char *symbol; /* astronomical symbol */
-    const char *name;   /* object name */
-    double dist;        /* average semi-major axis (km) */
-    double diameter;    /* mean diameter (km) */
-    double orbit;       /* sidereal orbit period (days) */
-    lv_color color;     /* orbital trail color (RGBA, 0-1) */
-};
-
-struct lv_sign
-{
-    const char *symbol;
-    const char *name;
-    lv_color color;
-};
-
 extern const char* ephembra_data_file;
 extern const char* ephembra_sans_font;
 extern const char* ephembra_mono_font;
 extern const char* ephembra_awes_font;
 extern const char* ephembra_image_tmpl;
-
-extern lv_oid data[];
-extern size_t idx_count;
-extern lv_sign signs[];
-extern size_t sign_count;
 
 void lv_app_init(lv_app *app);
 void lv_vg_uinit(lv_app* app);

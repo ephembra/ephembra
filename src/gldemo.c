@@ -39,8 +39,6 @@
 #endif
 #include <GLFW/glfw3.h>
 
-#include "demolib.h"
-
 #include "nanovg.h"
 #define NANOVG_GLES3
 #include "nanovg_gl.h"
@@ -57,53 +55,10 @@
 #include "lv_ops_buffer.h"
 #include "lv_ops_xform.h"
 
+#include "demolib.h"
+#include "demodata.h"
+
 #include "gldemo.h"
-
-#define countof(arr) (sizeof(arr)/sizeof(arr[0]))
-
-lv_oid data[11] = {
-    { ephem_id_Sun,     "☉", "Sun",        1000000,    695700,      0.000,
-      { 1.00, 0.84, 0.00, 1.0 } }, // golden-yellow photosphere
-    { ephem_id_Moon,    "☽", "Moon",     149598023,      3474,     27.320,
-      { 0.75, 0.75, 0.75, 1.0 } }, // pale grey
-    { ephem_id_Mercury, "☿", "Mercury",   57909227,      4879,     87.969,
-      { 0.60, 0.60, 0.60, 1.0 } }, // mid-grey, rocky
-    { ephem_id_Venus,   "♀", "Venus",    108209475,     12104,    224.701,
-      { 0.96, 0.89, 0.70, 1.0 } }, // pale golden cream
-    { ephem_id_Earth,   "♁", "Earth",    149598023,     12742,    365.256,
-      { 0.27, 0.55, 0.68, 1.0 } }, // blue-green oceans/land
-    { ephem_id_Mars,    "♂", "Mars",     227939200,      6779,    686.980,
-      { 0.70, 0.40, 0.35, 1.0 } }, // reddish-orange dusty soil
-    { ephem_id_Jupiter, "♃", "Jupiter",  778340821,    139820,   4332.589,
-      { 0.87, 0.72, 0.53, 1.0 } }, // beige bands with light brown
-    { ephem_id_Saturn,  "♄", "Saturn",  1426666422,    116460,  10759.220,
-      { 0.93, 0.85, 0.63, 1.0 } }, // pale yellow-brown
-    { ephem_id_Uranus,  "♅", "Uranus",  2870658186,     50724,  30687.000,
-      { 0.56, 0.75, 0.82, 1.0 } }, // pale cyan
-    { ephem_id_Neptune, "♆", "Neptune", 4498396441,     49244,  60190.000,
-      { 0.28, 0.35, 0.68, 1.0 } }, // deep azure blue
-    { ephem_id_Pluto,   "♇", "Pluto",   5906376272,      2377,  90560.000,
-      { 0.72, 0.62, 0.57, 1.0 } }, // light brown-grey, icy patches
-};
-
-size_t idx_count = countof(data);
-
-lv_sign signs[12] = {
-    { "♈", "Aries",       { 0.937, 0.325, 0.314, 1.000 } }, // U+2648
-    { "♉", "Taurus",      { 1.000, 0.439, 0.263, 1.000 } }, // U+2649
-    { "♊", "Gemini",      { 1.000, 0.655, 0.149, 1.000 } }, // U+264A
-    { "♋", "Cancer",      { 1.000, 0.800, 0.196, 1.000 } }, // U+264B
-    { "♌", "Leo",         { 0.988, 0.894, 0.220, 1.000 } }, // U+264C
-    { "♍", "Virgo",       { 0.612, 0.800, 0.396, 1.000 } }, // U+264D
-    { "♎", "Libra",       { 0.400, 0.733, 0.416, 1.000 } }, // U+264E
-    { "♏", "Scorpio",     { 0.149, 0.651, 0.604, 1.000 } }, // U+264F
-    { "♐", "Sagittarius", { 0.980, 0.463, 0.824, 1.000 } }, // U+2650
-    { "♑", "Capricorn",   { 0.494, 0.341, 0.761, 1.000 } }, // U+2651
-    { "♒", "Aquarius",    { 0.671, 0.278, 0.737, 1.000 } }, // U+2652
-    { "♓", "Pisces",      { 0.925, 0.251, 0.478, 1.000 } }  // U+2653
-};
-
-size_t sign_count = countof(signs);
 
 const char* ephembra_data_file = "build/data/DE440Coeff.bin";
 const char* ephembra_sans_font = "resources/fonts/DejaVuSans.ttf";
@@ -184,11 +139,11 @@ void lv_ephem_init(lv_app *app)
     lv_current_date(app);
     de440_create_ephem(&app->ctx, ephembra_data_file);
     app->eph = (double*)malloc(ephem_id_Last * app->steps * sizeof(double) * 3);
-    app->images = (int*)malloc(countof(data) * sizeof(int));
+    app->images = (int*)malloc(data_count * sizeof(int));
     nvgCreateFont(vg, "mono", ephembra_mono_font);
     nvgCreateFont(vg, "sans", ephembra_sans_font);
 
-    for (size_t idx = 0; idx < countof(data); idx++)
+    for (size_t idx = 0; idx < data_count; idx++)
     {
         char path[64];
         snprintf(path, sizeof(path), ephembra_image_tmpl, data[idx].name);
@@ -200,7 +155,7 @@ void lv_ephem_destroy(lv_app *app)
 {
     NVGcontext *vg = *(NVGcontext**)app->ctx_nanovg->priv;
 
-    for (size_t idx = 0; idx < countof(data); idx++) {
+    for (size_t idx = 0; idx < data_count; idx++) {
         nvgDeleteImage(vg, app->images[idx]);
     }
 
@@ -212,7 +167,7 @@ void lv_ephem_destroy(lv_app *app)
 
 void lv_ephem_calc(lv_app *app, double jd)
 {
-    for (size_t idx = 0; idx < countof(data); idx++)
+    for (size_t idx = 0; idx < data_count; idx++)
     {
         size_t oid = data[idx].oid;
         for (size_t i = 0; i < app->steps; i++)
@@ -246,7 +201,7 @@ void lv_iau2006_dynamic_basis(lv_app *app, vec3 x0, vec3 y0, vec3 z0)
 
 static inline lv_color lv_idx_color(lv_app* app, size_t idx, float alpha)
 {
-    lv_color color = lv_color_af(data[idx].color, alpha);
+    lv_color color = lv_color_af(lv_rgbf_array(data[idx].color), alpha);
     if (data[idx].oid == app->rot_oid) {
         return lv_color_adjust(color, 1.5, 1.5);
     } else {
@@ -256,13 +211,13 @@ static inline lv_color lv_idx_color(lv_app* app, size_t idx, float alpha)
 
 static inline float lv_idx_scale(bool cartoon, size_t idx)
 {
-    float r = (float)(data[idx].dist / data[countof(data)-1].dist);
+    float r = (float)(data[idx].dist / data[data_count-1].dist);
     return cartoon ? (idx / 10.0f) / r : 1.0f;
 }
 
 static inline size_t lv_idx_for_oid(size_t oid)
 {
-    for (size_t idx = 0; idx < countof(data); idx++) {
+    for (size_t idx = 0; idx < data_count; idx++) {
         if (data[idx].oid == oid) return idx;
     }
     return -1;
@@ -357,7 +312,7 @@ void lv_zodiac_3d(lv_app *app, lv_context* ctx)
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
-    for (size_t idx = 0; idx < countof(data); idx++)
+    for (size_t idx = 0; idx < data_count; idx++)
     {
         size_t oid = data[idx].oid;
         float s = lv_idx_scale(app->cartoon, idx);
@@ -404,7 +359,7 @@ void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
         nvgText(vg, q[0], q[1], signs[i].symbol, NULL);
     }
 
-    for (size_t idx = 0; idx < countof(data); idx++)
+    for (size_t idx = 0; idx < data_count; idx++)
     {
         size_t oid = data[idx].oid;
 
@@ -433,7 +388,7 @@ void lv_planets_3d(lv_app *app, lv_context* ctx)
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
-    for (size_t idx = 0; idx < countof(data); idx++)
+    for (size_t idx = 0; idx < data_count; idx++)
     {
         size_t oid = data[idx].oid;
 
@@ -469,11 +424,11 @@ void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
     float f = global_scale * app->zodiac_offset;
     vec4 x0, y0, z0;
 
-    lv_oid_idx zidx[countof(data)];
+    lv_oid_idx zidx[data_count];
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
-    for (size_t idx = 0; idx < countof(data); idx++)
+    for (size_t idx = 0; idx < data_count; idx++)
     {
         vec3 p0;
         size_t oid = data[idx].oid;
@@ -483,9 +438,9 @@ void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
         object_to_screen(zidx[idx].pos, p0, app->m_mvp, w, h);
     }
 
-    qsort(zidx, countof(data), sizeof(lv_oid_idx), lv_oid_zsort);
+    qsort(zidx, data_count, sizeof(lv_oid_idx), lv_oid_zsort);
 
-    for (size_t i = 0; i < countof(data); i++)
+    for (size_t i = 0; i < data_count; i++)
     {
         lv_color color;
         NVGcolor vgc;
@@ -670,7 +625,7 @@ static int mouse_find_oid(lv_app *app, vec2f pos,
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
-    for (size_t idx = 0; idx < countof(data); idx++)
+    for (size_t idx = 0; idx < data_count; idx++)
     {
         size_t oid = data[idx].oid;
         float s = lv_idx_scale(app->cartoon, idx);

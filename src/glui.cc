@@ -38,8 +38,6 @@
 #endif
 #include <GLFW/glfw3.h>
 
-#include "demolib.h"
-
 #include "nanovg.h"
 #define NANOVG_GLES3
 #include "nanovg_gl.h"
@@ -60,9 +58,10 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
-#include "gldemo.h"
+#include "demolib.h"
+#include "demodata.h"
 
-#define countof(arr) (sizeof(arr)/sizeof(arr[0]))
+#include "gldemo.h"
 
 static const int font_sizes[] = {
     8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72
@@ -300,7 +299,7 @@ void lv_imgui(lv_app* app, float w, float h, float r)
         lv_iau2006_dynamic_matrix(app, m);
         mat4x4_invert(im, m);
 
-        for (size_t idx = 0; idx < idx_count; idx++)
+        for (size_t idx = 0; idx < data_count; idx++)
         {
             size_t oid = data[idx].oid;
 

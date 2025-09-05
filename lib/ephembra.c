@@ -45,36 +45,36 @@ struct de440_idx
 };
 
 const char* ephem_name[15] = {
-    [ephem_id_Mercury]      = "Mercury",
-    [ephem_id_Venus]        = "Venus",
-    [ephem_id_EarthMoon]    = "EarthMoon",
-    [ephem_id_Mars]         = "Mars",
-    [ephem_id_Jupiter]      = "Jupiter",
-    [ephem_id_Saturn]       = "Saturn",
-    [ephem_id_Uranus]       = "Uranus",
-    [ephem_id_Neptune]      = "Neuptune",
-    [ephem_id_Pluto]        = "Pluto",
-    [ephem_id_Sun]          = "Sun",
-    [ephem_id_Moon]         = "Moon",
-    [ephem_id_Earth]        = "Earth",
-    [ephem_id_Nutations]    = "Nutations",
-    [ephem_id_Librations]   = "Librations"
+    [ephem_id_Mercury_Barycenter]      = "Mercury Barycenter",
+    [ephem_id_Venus_Barycenter]        = "Venus Barycenter",
+    [ephem_id_Earth_Moon_Barycenter]   = "Earth Moon Barycenter",
+    [ephem_id_Mars_Barycenter]         = "Mars Barycenter",
+    [ephem_id_Jupiter_Barycenter]      = "Jupiter Barycenter",
+    [ephem_id_Saturn_Barycenter]       = "Saturn Barycenter",
+    [ephem_id_Uranus_Barycenter]       = "Uranus Barycenter",
+    [ephem_id_Neptune_Barycenter]      = "Neuptune Barycenter",
+    [ephem_id_Pluto_Barycenter]        = "Pluto Barycenter",
+    [ephem_id_Sun]                     = "Sun",
+    [ephem_id_Moon]                    = "Moon",
+    [ephem_id_Earth]                   = "Earth",
+    [ephem_id_Nutations]               = "Nutations",
+    [ephem_id_Librations]              = "Librations"
 };
 
 const de440_idx ephem_idx[15] = {
-    [ephem_id_Mercury]      = {   3, 14,  45,  8, 42 },
-    [ephem_id_Venus]        = { 171, 10, 201, 16, 30 },
-    [ephem_id_EarthMoon]    = { 231, 13, 270, 16, 39 },
-    [ephem_id_Mars]         = { 309, 11, 342, 32,  0 },
-    [ephem_id_Jupiter]      = { 342,  8, 366, 32,  0 },
-    [ephem_id_Saturn]       = { 366,  7, 387, 32,  0 },
-    [ephem_id_Uranus]       = { 387,  6, 405, 32,  0 },
-    [ephem_id_Neptune]      = { 405,  6, 423, 32,  0 },
-    [ephem_id_Pluto]        = { 423,  6, 441, 32,  0 },
-    [ephem_id_Sun]          = { 753, 11, 786, 16, 33 },
-    [ephem_id_Moon]         = { 441, 13, 480,  4, 39 },
-    [ephem_id_Nutations]    = { 819, 10, 839,  8, 20 },
-    [ephem_id_Librations]   = { 899, 10, 929,  8, 30 }
+    [ephem_id_Mercury_Barycenter]      = {   3, 14,  45,  8, 42 },
+    [ephem_id_Venus_Barycenter]        = { 171, 10, 201, 16, 30 },
+    [ephem_id_Earth_Moon_Barycenter]   = { 231, 13, 270, 16, 39 },
+    [ephem_id_Mars_Barycenter]         = { 309, 11, 342, 32,  0 },
+    [ephem_id_Jupiter_Barycenter]      = { 342,  8, 366, 32,  0 },
+    [ephem_id_Saturn_Barycenter]       = { 366,  7, 387, 32,  0 },
+    [ephem_id_Uranus_Barycenter]       = { 387,  6, 405, 32,  0 },
+    [ephem_id_Neptune_Barycenter]      = { 405,  6, 423, 32,  0 },
+    [ephem_id_Pluto_Barycenter]        = { 423,  6, 441, 32,  0 },
+    [ephem_id_Sun]                     = { 753, 11, 786, 16, 33 },
+    [ephem_id_Moon]                    = { 441, 13, 480,  4, 39 },
+    [ephem_id_Nutations]               = { 819, 10, 839,  8, 20 },
+    [ephem_id_Librations]              = { 899, 10, 929,  8, 30 }
 };
 
 void de440_create_ephem(ephem_ctx *ctx, const char *ephem_bin)
@@ -248,15 +248,20 @@ void de440_ephem_obj(ephem_ctx *ctx, double jd,
 {
     double t0[3], t1[3];
     switch (oid) {
+    case ephem_id_Solar_System_Barycenter:
+        obj[0] = 0.0;
+        obj[1] = 0.0;
+        obj[2] = 0.0;
+        break;
     case ephem_id_Earth:
-        de440_ephem_obj_internal(ctx, jd, row, ephem_id_EarthMoon, t0);
+        de440_ephem_obj_internal(ctx, jd, row, ephem_id_Earth_Moon_Barycenter, t0);
         de440_ephem_obj_internal(ctx, jd, row, ephem_id_Moon, t1);
         obj[0] = t0[0] - t1[0] * EMRAT1;
         obj[1] = t0[1] - t1[1] * EMRAT1;
         obj[2] = t0[2] - t1[2] * EMRAT1;
         break;
     case ephem_id_Moon:
-        de440_ephem_obj_internal(ctx, jd, row, ephem_id_EarthMoon, t0);
+        de440_ephem_obj_internal(ctx, jd, row, ephem_id_Earth_Moon_Barycenter, t0);
         de440_ephem_obj_internal(ctx, jd, row, ephem_id_Moon, t1);
         obj[0] = t0[0] + t1[0];
         obj[1] = t0[1] + t1[1];

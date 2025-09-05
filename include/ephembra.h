@@ -32,21 +32,22 @@ struct ephem_ctx
 };
 
 enum {
-    ephem_id_Mercury = 1,
-    ephem_id_Venus = 2,
-    ephem_id_EarthMoon = 3,
-    ephem_id_Mars = 4,
-    ephem_id_Jupiter = 5,
-    ephem_id_Saturn = 6,
-    ephem_id_Uranus = 7,
-    ephem_id_Neptune = 8,
-    ephem_id_Pluto = 9,
-    ephem_id_Sun = 10,
-    ephem_id_Moon = 11,
-    ephem_id_Earth = 12,
-    ephem_id_Nutations = 13,
-    ephem_id_Librations = 14,
-    ephem_id_Last = 15
+    ephem_id_Solar_System_Barycenter = 0,  /* Solar System Barycenter */
+    ephem_id_Mercury_Barycenter      = 1,  /* Mercury Barycenter */
+    ephem_id_Venus_Barycenter        = 2,  /* Venus Barycenter */
+    ephem_id_Earth_Moon_Barycenter   = 3,  /* Earth-Moon Barycenter */
+    ephem_id_Mars_Barycenter         = 4,  /* Mars Barycenter */
+    ephem_id_Jupiter_Barycenter      = 5,  /* Jupiter Barycenter */
+    ephem_id_Saturn_Barycenter       = 6,  /* Saturn Barycenter */
+    ephem_id_Uranus_Barycenter       = 7,  /* Uranus Barycenter */
+    ephem_id_Neptune_Barycenter      = 8,  /* Neptune Barycenter */
+    ephem_id_Pluto_Barycenter        = 9,  /* Pluto Barycenter */
+    ephem_id_Sun                     = 10, /* Sun */
+    ephem_id_Moon                    = 11, /* Moon (local ID) */
+    ephem_id_Earth                   = 12, /* Earth (local ID) */
+    ephem_id_Nutations               = 13, /* Nutations (local ID) */
+    ephem_id_Librations              = 14, /* Librations (local ID) */
+    ephem_id_Last                    = 15
 };
 
 void de440_create_ephem(ephem_ctx *ctx, const char *ephem_bin);

@@ -310,6 +310,16 @@ static lv_color lv_rgbaf(float r, float g, float b, float a)
     lv_color c = { r, g, b, a }; return c;
 }
 
+static lv_color lv_rgbf_array(float col[3])
+{
+    lv_color c = { col[0], col[1], col[2], 1.0f }; return c;
+}
+
+static lv_color lv_rgbaf_array(float col[4])
+{
+    lv_color c = { col[0], col[1], col[2], col[3] }; return c;
+}
+
 static lv_color lv_rgb(unsigned char r, unsigned char g, unsigned char b)
 {
     return lv_rgbf(r / 255.0f, g / 255.0f, b / 255.0f);
