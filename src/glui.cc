@@ -67,6 +67,20 @@ static const int font_sizes[] = {
     8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72
 };
 
+enum {
+    lv_step_days,
+    lv_step_hours,
+    lv_step_minutes,
+    lv_step_seconds,
+};
+
+static const char* play_steps[] = {
+    [lv_step_days] = "days",
+    [lv_step_hours] = "hours",
+    [lv_step_minutes] = "minutes",
+    [lv_step_seconds] = "seconds",
+};
+
 void lv_vg_uinit(lv_app* app)
 {
     app->ctx_nanovg = (lv_context*)calloc(1, sizeof(lv_context));
@@ -116,84 +130,98 @@ void lv_app_imgui_destroy()
     ImGui::DestroyContext();	
 }
 
-void lv_date_picker(lv_date *date)
+bool lv_date_picker(lv_date *date)
 {
-    int dim;
+    bool yy = false, mm = false, dd = false;
+    bool hh = false, mi = false, ss = false;
 
-    ImGui::Text("Date:");
-    ImGui::SameLine();
-    ImGui::PushItemWidth(200);
-    ImGui::InputInt("YYYY", &date->year);
+    lv_date odate = *date;
+    double ojd = lv_date_to_julian(*date);
+    double njd = ojd;
+    double djd = 0.0;
 
-    if (date->year < 1700) {
-        date->year = 1700;
-        date->month = 1;
-        date->day = 1;
-    } else if (date->year > 2399) {
-        date->year = 2399;
-        date->month = 12;
-        date->day = 31;
+    ImGui::BeginTable("DateTime", 6,
+        ImGuiTableFlags_Borders |
+        ImGuiTableFlags_RowBg |
+        ImGuiTableFlags_SizingStretchProp, ImVec2(1000.0f, 0.0f));
+    ImGui::TableSetupColumn("Year");
+    ImGui::TableSetupColumn("Mon");
+    ImGui::TableSetupColumn("Day");
+    ImGui::TableSetupColumn("Hour");
+    ImGui::TableSetupColumn("Min");
+    ImGui::TableSetupColumn("Sec");
+    ImGui::TableHeadersRow();
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::SetNextItemWidth(200.0f);
+    yy = ImGui::InputInt("##YY", &date->year);
+    ImGui::TableSetColumnIndex(1);
+    ImGui::SetNextItemWidth(150.0f);
+    mm = ImGui::InputInt("##MM", &date->month);
+    ImGui::TableSetColumnIndex(2);
+    ImGui::SetNextItemWidth(150.0f);
+    dd = ImGui::InputInt("##DD", &date->day);
+    ImGui::TableSetColumnIndex(3);
+    ImGui::SetNextItemWidth(150.0f);
+    hh = ImGui::InputInt("##HH", &date->hour);
+    ImGui::TableSetColumnIndex(4);
+    ImGui::SetNextItemWidth(150.0f);
+    mi = ImGui::InputInt("##MI", &date->minute);
+    ImGui::TableSetColumnIndex(5);
+    ImGui::SetNextItemWidth(150.0f);
+    ss = ImGui::InputInt("##SS", &date->second);
+    ImGui::EndTable();
+
+    if (yy) {
+        njd = ojd + (date->year - odate.year) * 365.0;
     }
-
-    ImGui::PopItemWidth();
-    ImGui::PushItemWidth(150);
-    ImGui::SameLine();
-    ImGui::InputInt("MM", &date->month);
-
-    if (date->month < 1) {
-        date->year--;
-        date->month = 12;
-        if (date->year < 1700) {
-            date->year = 1700;
-            date->month = 1;
-            date->day = 1;
-        }
-    } else if (date->month > 12) {
-        date->year++;
-        date->month = 1;
-        if (date->year > 2399) {
-            date->year = 2399;
-            date->month = 12;
-            date->day = 31;
-        }
-    }
-
-    ImGui::SameLine();
-    ImGui::InputInt("DD", &date->day);
-    ImGui::PopItemWidth();
-
-    dim = lv_days_in_month(date->year, date->month-1);
-    if (date->day < 1) {
-        date->month--;
-        if (date->month < 1) {
-            date->year--;
-            date->month = 12;
-            if (date->year < 1700) {
-                date->year = 1700;
-                date->month = 1;
-                date->day = 1;
-            } else {
-                date->day = lv_days_in_month(date->year, date->month-1);
+    if (mm) {
+        int days = 0;
+        if (date->month - odate.month > 0) {
+            int months = date->month - odate.month;
+            for (int i = 0; i < months; i++) {
+                int yy = odate.year + (months - odate.month) / 12;
+                int mm = 1 + (12 + odate.month + i - 1) % 12;
+                int dim = lv_days_in_month(yy, mm);
+                days += (dim - odate.day) + odate.day;
             }
-        } else {
-            date->day = lv_days_in_month(date->year, date->month-1);
-        }
-    } else if (date->day > dim) {
-        date->month++;
-        if (date->month > 12) {
-            date->month = 1;
-            date->year++;
-            if (date->year > 2399) {
-                date->year = 2399;
-                date->month = 12;
-                date->day = 31;
-            } else {
-                date->day = 1;
+        } else if (odate.month - date->month > 0) {
+            int months = odate.month - date->month;
+            for (int i = 0; i < months; i++) {
+                int yy = odate.year + (months - odate.month) / 12;
+                int mm = 1 + (12 + odate.month + i - 2) % 12;
+                int dim = lv_days_in_month(yy, mm);
+                days -= (dim - odate.day) + odate.day;
             }
-        } else {
-            date->day = 1;
         }
+        njd = ojd + days;
     }
+    if (dd) {
+        njd = ojd + (date->day - odate.day);
+    }
+
+    if (hh) {
+        int diff = date->hour - odate.hour;
+        double delta = abs(diff) / 24.0;
+        njd = ojd + delta * (diff > 0 ? 1.0 : -1.0);
+    }
+    if (mi) {
+        int diff = date->minute - odate.minute;
+        double delta = abs(diff) / 1440.0;
+        njd = ojd + delta * (diff > 0 ? 1.0 : -1.0);
+    }
+    if (ss) {
+        int diff = date->second - odate.second;
+        double delta = abs(diff) / 86400.0;
+        njd = ojd + delta * (diff > 0 ? 1.0 : -1.0);
+    }
+
+    if (ojd != njd) {
+        *date = lv_julian_to_date(njd);
+        return true;
+    }
+
+    return false;
 }
 
 void lv_font_size(const char *label, int *font_size)
@@ -219,25 +247,68 @@ void lv_font_size(const char *label, int *font_size)
 
 void lv_imgui(lv_app* app, float w, float h, float r)
 {
+    char date_text[128];
+
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
 
     ImGui::NewFrame();
     ImGui::Begin("Controller", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::PushItemWidth(1000.0f);
-    if (ImGui::SliderInt("Julian Date", &app->cjd, app->sjd, app->ejd)) {
-        lv_update_date(app);
+    app->slider_valid = false;
+    if (ImGui::SliderInt("##Julian Date", &app->cjd, app->sjd, app->ejd)) {
+        app->slider_valid |= true;
+        app->playback = app->timedisp = 0;
     }
-    if (ImGui::SliderInt("Fine Adjust", &app->cjdf, app->sjdf, app->ejdf)) {
-        lv_update_date(app);
+    if (ImGui::SliderInt("##Fine Adjust", &app->cjdf, app->sjdf, app->ejdf)) {
+        app->slider_valid |= true;
+        app->playback = app->timedisp = 0;
     }
     ImGui::PopItemWidth();
+
+    if ((app->date_valid = lv_date_picker(&app->date))) {
+        app->jd = lv_date_to_julian(app->date);
+        app->playback = app->timedisp = 0;
+    }
+
     if (ImGui::Button(app->playback  ? "\uf04c##playback"
                                      : "\uf04b##playback", ImVec2(36, 36))) {
         app->playback = !app->playback;
+        if (app->playback) app->timedisp = 0;
     }
     ImGui::SameLine();
-    lv_date_picker(&app->date);
+    ImGui::SetNextItemWidth(150.0f);
+    if (ImGui::BeginCombo("##playstep", play_steps[app->play_step])) {
+        for (int i = 0; i < IM_ARRAYSIZE(play_steps); i++)
+        {
+            bool sel = (app->play_step == i);
+            if (ImGui::Selectable(play_steps[i], sel)) {
+                app->play_step = i;
+            }
+            if (sel) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+    switch (app->play_step) {
+    case lv_step_days: app->play_rate = 1.0; break;
+    case lv_step_hours: app->play_rate = 1.0 / 24.0; break;
+    case lv_step_minutes: app->play_rate = 1.0 / 1440.0; break;
+    case lv_step_seconds: app->play_rate = 1.0 / 86400.0; break;
+    }
+    ImGui::SameLine();
+    ImGui::PushStyleColor(ImGuiCol_Text,
+        app->timedisp ? IM_COL32(255,255,255,255) : IM_COL32(127,127,127,255));
+    if (ImGui::Button("\uf017##timenow")) {
+        app->timedisp = !app->timedisp;
+        if (app->timedisp) app->playback = 0;
+    }
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+    lv_format_date(date_text, sizeof(date_text), &app->date);
+    ImGui::Text("Julian Date %14.6f, %s", app->jd, date_text);
+
     ImGui::End();
 
     ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);

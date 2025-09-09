@@ -36,6 +36,7 @@ typedef struct lv_date lv_date;
 struct lv_date
 {
     int year, month, day;
+    int hour, minute, second;
 };
 
 /*
@@ -158,6 +159,8 @@ double lv_date_to_julian(lv_date d);
 lv_date lv_julian_to_date(double jd);
 
 int lv_days_in_month(int year, int month);
+
+size_t lv_format_date(char *buf, size_t buflen, lv_date *d);
 
 /*
  * astronomical functions

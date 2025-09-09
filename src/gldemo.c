@@ -96,6 +96,7 @@ void lv_app_init(lv_app *app)
     app->sjdf = -500;
     app->ejdf = 500;
     app->cjdf = 0;
+    app->timedisp = 1;
     app->playback = 0;
     app->precession = 1;
     app->cartoon = 1;
@@ -104,6 +105,8 @@ void lv_app_init(lv_app *app)
     app->dist_legend = 0;
     app->font_size = 12;
     app->symbol_size = 16;
+    app->play_step = 0;
+    app->play_rate = 1.0;
     app->ui_scale = 2.0f;
     app->grid_layer = 0;
     app->grid_steps = 10;
@@ -117,32 +120,53 @@ void lv_app_init(lv_app *app)
     app->zodiac_scale = 9.0f;
 }
 
-void lv_update_date(lv_app *app)
+static void lv_date_to_slider(lv_app *app)
 {
-    app->jd = app->cjd + app->cjdf + 0.5;
-    app->date = lv_julian_to_date(app->jd);
+    if (app->jd - 0.5 < app->sjd) {
+        app->cjd = app->sjd;
+        app->cjdf = app->jd - 0.5 - app->sjd;
+    } else if (app->jd - 0.5 > app->ejd) {
+        app->cjd = app->ejd;
+        app->cjdf = app->jd - 0.5 - app->ejd;
+    } else {
+        app->cjd = app->jd;
+        app->cjdf = 0;
+    }
 }
 
 void lv_current_date(lv_app *app)
 {
     time_t t = time(NULL);
     struct tm *tm = gmtime(&t);
-    lv_date d = { tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday };
-    app->cjd = (int)lv_date_to_julian(d);
-    lv_update_date(app);
+    lv_date d = {
+        tm->tm_year + 1900,
+        tm->tm_mon + 1,
+        tm->tm_mday,
+        tm->tm_hour,
+        tm->tm_min,
+        tm->tm_sec
+    };
+    double njd = lv_date_to_julian(d);
+    if (app->jd != njd) {
+        app->jd = njd;
+        lv_date_to_slider(app);
+        app->date = lv_julian_to_date(app->jd);
+        lv_ephem_calc(app, app->jd);
+    }
 }
 
 void lv_ephem_init(lv_app *app)
 {
     NVGcontext *vg = *(NVGcontext**)app->ctx_nanovg->priv;
 
-    lv_current_date(app);
-    de440_create_ephem(&app->ctx, ephembra_data_file);
-    app->eph = (double*)malloc(ephem_id_Last * app->steps * sizeof(double) * 3);
-    app->images = (int*)malloc(data_count * sizeof(int));
     nvgCreateFont(vg, "mono", ephembra_mono_font);
     nvgCreateFont(vg, "sans", ephembra_sans_font);
 
+    de440_create_ephem(&app->ctx, ephembra_data_file);
+    app->eph = (double*)malloc(ephem_id_Last * app->steps * sizeof(double) * 3);
+    lv_current_date(app);
+
+    app->images = (int*)malloc(data_count * sizeof(int));
     for (size_t idx = 0; idx < data_count; idx++)
     {
         char path[64];
@@ -543,36 +567,27 @@ void lv_render(lv_app* app, float w, float h, float r)
     mat4x4 m_model, m_proj;
     lv_context* ctx;
 
-    if (app->playback) {
-        if (++app->cjdf > app->ejdf) {
-            if (app->cjd + app->cjdf >= app->ejd) {
-                app->playback = 0;
-            } else {
-                app->cjd += (app->ejdf - app->sjdf) + 1;
-                app->cjdf = app->sjdf;
-            }
-        }
-    } else {
-        double njd = lv_date_to_julian(app->date);
-        if (njd != app->cjd + app->cjdf + 0.5) {
-            if (njd - 0.5 < app->sjd) {
-                app->cjd = app->sjd;
-                app->cjdf = njd - 0.5 - app->sjd;
-            } else if (njd - 0.5 > app->ejd) {
-                app->cjd = app->ejd;
-                app->cjdf = njd - 0.5 - app->ejd;
-            } else {
-                app->cjd = njd;
-                app->cjdf = 0;
-            }
+    if (app->date_valid) {
+        lv_date_to_slider(app);
+        lv_ephem_calc(app, app->jd);
+    }
+    else if (app->slider_valid) {
+        app->jd = app->cjd + app->cjdf + 0.5;
+        app->date = lv_julian_to_date(app->jd);
+        lv_ephem_calc(app, app->jd);
+    }
+    else if (app->playback) {
+        if (app->jd - 0.5 >= app->ejd + app->ejdf) {
+            app->playback = 0;
+        } else {
+            app->jd += app->play_rate;
+            app->date = lv_julian_to_date(app->jd);
+            lv_date_to_slider(app);
+            lv_ephem_calc(app, app->jd);
         }
     }
-
-    if (app->cjd != app->ljd || app->cjdf != app->ljdf) {
-        lv_update_date(app);
-        lv_ephem_calc(app, app->jd);
-        app->ljd = app->cjd;
-        app->ljdf = app->cjdf;
+    else if (app->timedisp) {
+        lv_current_date(app);
     }
 
     ctx = app->ctx_buffer;

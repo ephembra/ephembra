@@ -50,9 +50,11 @@ struct lv_app
     int sjd, sjdf;
     int ejd, ejdf;
     int cjd, cjdf;
-    int ljd, ljdf;
     double jd;
     lv_date date;
+    bool date_valid;
+    bool slider_valid;
+    bool timedisp;
     bool playback;
     bool precession;
     bool cartoon;
@@ -64,6 +66,8 @@ struct lv_app
     int grid_steps;
     int font_size;
     int symbol_size;
+    int play_step;
+    double play_rate;
     float ui_scale;
     float grid_scale;
     float trail_width;
@@ -104,7 +108,7 @@ void lv_planets_3d(lv_app *app, lv_context* ctx);
 void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h);
 void lv_render(lv_app* app, float w, float h, float r);
 
-void lv_date_picker(lv_date *date);
+bool lv_date_picker(lv_date *date);
 void lv_font_size(const char *label, int *font_size);
 void lv_imgui(lv_app* app, float w, float h, float r);
 void lv_app_main(int argc, char **argv);
