@@ -347,7 +347,9 @@ void lv_imgui(lv_app* app, float w, float h, float r)
     ImGui::Text("Legends");
     ImGui::Separator();
     ImGui::Checkbox("Symbols", &app->sym_legend);
+    ImGui::SameLine();
     ImGui::Checkbox("Names", &app->name_legend);
+    ImGui::SameLine();
     ImGui::Checkbox("Distances", &app->dist_legend);
 
     ImGui::End();
