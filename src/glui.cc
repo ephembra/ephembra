@@ -140,37 +140,39 @@ bool lv_date_picker(lv_date *date)
     double njd = ojd;
     double djd = 0.0;
 
-    ImGui::BeginTable("DateTime", 6,
+    if (ImGui::BeginTable("DateTime", 6,
         ImGuiTableFlags_Borders |
         ImGuiTableFlags_RowBg |
-        ImGuiTableFlags_SizingStretchProp, ImVec2(1000.0f, 0.0f));
-    ImGui::TableSetupColumn("Year");
-    ImGui::TableSetupColumn("Mon");
-    ImGui::TableSetupColumn("Day");
-    ImGui::TableSetupColumn("Hour");
-    ImGui::TableSetupColumn("Min");
-    ImGui::TableSetupColumn("Sec");
-    ImGui::TableHeadersRow();
-    ImGui::TableNextRow();
-    ImGui::TableSetColumnIndex(0);
-    ImGui::SetNextItemWidth(200.0f);
-    yy = ImGui::InputInt("##YY", &date->year);
-    ImGui::TableSetColumnIndex(1);
-    ImGui::SetNextItemWidth(150.0f);
-    mm = ImGui::InputInt("##MM", &date->month);
-    ImGui::TableSetColumnIndex(2);
-    ImGui::SetNextItemWidth(150.0f);
-    dd = ImGui::InputInt("##DD", &date->day);
-    ImGui::TableSetColumnIndex(3);
-    ImGui::SetNextItemWidth(150.0f);
-    hh = ImGui::InputInt("##HH", &date->hour);
-    ImGui::TableSetColumnIndex(4);
-    ImGui::SetNextItemWidth(150.0f);
-    mi = ImGui::InputInt("##MI", &date->minute);
-    ImGui::TableSetColumnIndex(5);
-    ImGui::SetNextItemWidth(150.0f);
-    ss = ImGui::InputInt("##SS", &date->second);
-    ImGui::EndTable();
+        ImGuiTableFlags_SizingStretchProp, ImVec2(1000.0f, 0.0f)))
+    {
+        ImGui::TableSetupColumn("Year");
+        ImGui::TableSetupColumn("Mon");
+        ImGui::TableSetupColumn("Day");
+        ImGui::TableSetupColumn("Hour");
+        ImGui::TableSetupColumn("Min");
+        ImGui::TableSetupColumn("Sec");
+        ImGui::TableHeadersRow();
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::SetNextItemWidth(200.0f);
+        yy = ImGui::InputInt("##YY", &date->year);
+        ImGui::TableSetColumnIndex(1);
+        ImGui::SetNextItemWidth(150.0f);
+        mm = ImGui::InputInt("##MM", &date->month);
+        ImGui::TableSetColumnIndex(2);
+        ImGui::SetNextItemWidth(150.0f);
+        dd = ImGui::InputInt("##DD", &date->day);
+        ImGui::TableSetColumnIndex(3);
+        ImGui::SetNextItemWidth(150.0f);
+        hh = ImGui::InputInt("##HH", &date->hour);
+        ImGui::TableSetColumnIndex(4);
+        ImGui::SetNextItemWidth(150.0f);
+        mi = ImGui::InputInt("##MI", &date->minute);
+        ImGui::TableSetColumnIndex(5);
+        ImGui::SetNextItemWidth(150.0f);
+        ss = ImGui::InputInt("##SS", &date->second);
+        ImGui::EndTable();
+    }
 
     if (yy) {
         njd = ojd + (date->year - odate.year) * 365.0;
