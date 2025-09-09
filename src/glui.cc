@@ -392,7 +392,7 @@ void lv_imgui(lv_app* app, float w, float h, float r)
             ImGui::TableSetColumnIndex(0);
             ImGui::Text("%s %s", data[idx].symbol, data[idx].name);
             ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%3d°%02d′", deg, min);
+            ImGui::Text("%2d°%02d′", deg % 30, min);
             ImGui::TableSetColumnIndex(2);
             ImGui::Text("%s %s", signs[sid].symbol, signs[sid].name);
         }
