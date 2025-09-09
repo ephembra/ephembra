@@ -75,10 +75,10 @@ enum {
 };
 
 static const char* play_steps[] = {
-    [lv_step_days] = "days",
-    [lv_step_hours] = "hours",
-    [lv_step_minutes] = "minutes",
-    [lv_step_seconds] = "seconds",
+    "days",
+    "hours",
+    "minutes",
+    "seconds",
 };
 
 void lv_vg_uinit(lv_app* app)
