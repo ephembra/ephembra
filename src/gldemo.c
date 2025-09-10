@@ -342,6 +342,8 @@ void lv_zodiac_3d(lv_app *app, lv_context* ctx)
         float s = lv_idx_scale(app->cartoon, idx);
         vec3 p0, p1, p2, p3;
 
+        if (oid == ephem_id_Moon) continue;
+
         lv_ephem_object_vec3(app, oid, 0, p0, s);
         if (p0[0] != p0[0]) continue;
         vec3_project_to_basis(p1, p0, x0, y0);
