@@ -256,6 +256,14 @@ static int lv_oid_zsort(const void *p1, const void *p2)
     else return 0;
 }
 
+static inline void vec3_sum_scale_3(vec3 r,
+    vec3 a, float as, vec3 b, float bs, vec3 c, float cs)
+{
+    r[0] = a[0] * as + b[0] * bs + c[0] * cs;
+    r[1] = a[1] * as + b[1] * bs + c[1] * cs;
+    r[2] = a[2] * as + b[2] * bs + c[2] * cs;
+}
+
 void lv_grid_3d(lv_app *app, lv_context* ctx)
 {
     float f = global_scale * app->zodiac_offset;
@@ -265,38 +273,24 @@ void lv_grid_3d(lv_app *app, lv_context* ctx)
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
     int n = app->grid_steps;
-    float step = g * (1.0f / app->grid_steps);
+    float step = g / n;
 
     lv_vg_stroke_width(ctx, app->line_width);
     lv_vg_stroke_color(ctx, grey);
     for (int i = -n; i <= n; i++)
     {
-        vec3 p0 = {
-            -z0[0] * f + y0[0] * -g + x0[0] * (i * step),
-            -z0[1] * f + y0[1] * -g + x0[1] * (i * step),
-            -z0[2] * f + y0[2] * -g + x0[2] * (i * step)
-        };
-        vec3 p1 = {
-            -z0[0] * f + y0[0] *  g + x0[0] * (i * step),
-            -z0[1] * f + y0[1] *  g + x0[1] * (i * step),
-            -z0[2] * f + y0[2] *  g + x0[2] * (i * step)
-        };
+        vec3 p0, p1, p2, p3;
+
+        vec3_sum_scale_3(p0, z0, -f, y0, -g, x0, i * step);
+        vec3_sum_scale_3(p1, z0, -f, y0,  g, x0, i * step);
 
         lv_vg_begin_path(ctx);
         lv_vg_3d_move_to(ctx, lv_point_3d(p0[0], p0[1], p0[2]));
         lv_vg_3d_line_to(ctx, lv_point_3d(p1[0], p1[1], p1[2]));
         lv_vg_stroke(ctx);
 
-        vec3 p2 = {
-            -z0[0] * f + x0[0] * -g + y0[0] * (i * step),
-            -z0[1] * f + x0[1] * -g + y0[1] * (i * step),
-            -z0[2] * f + x0[2] * -g + y0[2] * (i * step)
-        };
-        vec3 p3 = {
-            -z0[0] * f + x0[0] *  g + y0[0] * (i * step),
-            -z0[1] * f + x0[1] *  g + y0[1] * (i * step),
-            -z0[2] * f + x0[2] *  g + y0[2] * (i * step)
-        };
+        vec3_sum_scale_3(p2, z0, -f, x0, -g, y0, i * step);
+        vec3_sum_scale_3(p3, z0, -f, x0,  g, y0, i * step);
 
         lv_vg_begin_path(ctx);
         lv_vg_3d_move_to(ctx, lv_point_3d(p2[0], p2[1], p2[2]));
