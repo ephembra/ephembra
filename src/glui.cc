@@ -356,6 +356,9 @@ void lv_imgui(lv_app* app, float w, float h, float r)
 
     ImGui::End();
 
+    float padding = ImGui::GetStyle().CellPadding.x * 4 +
+                    ImGui::GetStyle().WindowPadding.x * 2;
+    ImGui::SetNextWindowSize(ImVec2(460 + padding, 0));
     ImGui::Begin("Chart", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
     if (ImGui::BeginTable("Chart", 3))
     {
@@ -365,9 +368,9 @@ void lv_imgui(lv_app* app, float w, float h, float r)
         float a;
         int deg, min, sid;
 
-        ImGui::TableSetupColumn("Planet");
-        ImGui::TableSetupColumn("Pos");
-        ImGui::TableSetupColumn("Sign");
+        ImGui::TableSetupColumn("Planet",  ImGuiTableColumnFlags_WidthFixed, 160.0f);
+        ImGui::TableSetupColumn("Pos",  ImGuiTableColumnFlags_WidthFixed, 100.0f);
+        ImGui::TableSetupColumn("Sign",  ImGuiTableColumnFlags_WidthFixed, 220.0f);
         ImGui::TableHeadersRow();
 
         lv_ephem_object_vec3(app, ephem_id_Earth, 0, e, 1.0f);
