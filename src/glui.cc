@@ -134,11 +134,10 @@ bool lv_date_picker(lv_date *date)
 {
     bool yy = false, mm = false, dd = false;
     bool hh = false, mi = false, ss = false;
-
     lv_date odate = *date;
     double ojd = lv_date_to_julian(*date);
     double njd = ojd;
-    double djd = 0.0;
+    int valid, dim;
 
     if (ImGui::BeginTable("DateTime", 6,
         ImGuiTableFlags_Borders |
@@ -174,10 +173,10 @@ bool lv_date_picker(lv_date *date)
         ImGui::EndTable();
     }
 
-    if (yy) {
+    if (yy && abs(date->year - odate.year) == 1) {
         njd = ojd + (date->year - odate.year) * 365.0;
     }
-    if (mm) {
+    if (mm && abs(date->month - odate.month) == 1) {
         int days = 0;
         if (date->month - odate.month > 0) {
             int months = date->month - odate.month;
@@ -198,21 +197,20 @@ bool lv_date_picker(lv_date *date)
         }
         njd = ojd + days;
     }
-    if (dd) {
+    if (dd && abs(date->day - odate.day) == 1) {
         njd = ojd + (date->day - odate.day);
     }
-
-    if (hh) {
+    if (hh && abs(date->hour - odate.hour) == 1) {
         int diff = date->hour - odate.hour;
         double delta = abs(diff) / 24.0;
         njd = ojd + delta * (diff > 0 ? 1.0 : -1.0);
     }
-    if (mi) {
+    if (mi && abs(date->minute - odate.minute) == 1) {
         int diff = date->minute - odate.minute;
         double delta = abs(diff) / 1440.0;
         njd = ojd + delta * (diff > 0 ? 1.0 : -1.0);
     }
-    if (ss) {
+    if (ss && abs(date->second - odate.second) == 1) {
         int diff = date->second - odate.second;
         double delta = abs(diff) / 86400.0;
         njd = ojd + delta * (diff > 0 ? 1.0 : -1.0);
@@ -220,10 +218,21 @@ bool lv_date_picker(lv_date *date)
 
     if (ojd != njd) {
         *date = lv_julian_to_date(njd);
-        return true;
     }
 
-    return false;
+    dim = lv_days_in_month(date->year, date->month);
+    valid = (date->year >= 1700 && date->year < 2400) &&
+            (date->month >= 1 && date->month <= 12) &&
+            (date->day >= 1 && date->day <= dim) &&
+            (date->hour >= 0 && date->hour < 60) &&
+            (date->minute >= 0 && date->minute < 60) &&
+            (date->second >= 0 && date->second < 60);
+
+    if (!valid) {
+        *date = odate;
+    }
+
+    return valid && (yy || mm || dd || hh || mi || ss);
 }
 
 void lv_font_size(const char *label, int *font_size)
