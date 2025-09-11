@@ -377,9 +377,9 @@ void lv_imgui(lv_app* app, float w, float h, float r)
         float a;
         int deg, min, sid;
 
-        ImGui::TableSetupColumn("Planet",  ImGuiTableColumnFlags_WidthFixed, 160.0f);
-        ImGui::TableSetupColumn("Pos",  ImGuiTableColumnFlags_WidthFixed, 100.0f);
-        ImGui::TableSetupColumn("Sign",  ImGuiTableColumnFlags_WidthFixed, 220.0f);
+        ImGui::TableSetupColumn("Object",  ImGuiTableColumnFlags_WidthFixed, 160.0f);
+        ImGui::TableSetupColumn("Degree",  ImGuiTableColumnFlags_WidthFixed, 100.0f);
+        ImGui::TableSetupColumn("Zodiac",  ImGuiTableColumnFlags_WidthFixed, 220.0f);
         ImGui::TableHeadersRow();
 
         lv_ephem_object_vec3(app, ephem_id_Earth, 0, e, 1.0f);
