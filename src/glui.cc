@@ -130,7 +130,7 @@ void lv_app_imgui_destroy()
     ImGui::DestroyContext();	
 }
 
-bool lv_date_picker(lv_date *date)
+static bool lv_date_picker(lv_date *date)
 {
     bool yy = false, mm = false, dd = false;
     bool hh = false, mi = false, ss = false;
@@ -235,7 +235,7 @@ bool lv_date_picker(lv_date *date)
     return valid && (yy || mm || dd || hh || mi || ss);
 }
 
-void lv_font_size(const char *label, int *font_size)
+static void lv_font_size(const char *label, int *font_size)
 {
     char font_size_str[16];
     snprintf(font_size_str, sizeof(font_size_str), "%u", *font_size);

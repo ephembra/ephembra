@@ -134,7 +134,7 @@ static void lv_date_to_slider(lv_app *app)
     }
 }
 
-void lv_current_date(lv_app *app)
+static void lv_current_date(lv_app *app)
 {
     time_t t = time(NULL);
     struct tm *tm = gmtime(&t);
