@@ -40,7 +40,7 @@
 #include <GLFW/glfw3.h>
 
 #include "nanovg.h"
-#define NANOVG_GLES3
+#define NANOVG_GL3
 #include "nanovg_gl.h"
 #include "nanovg_gl_utils.h"
 
@@ -929,7 +929,7 @@ void lv_app_main(int argc, char **argv)
 
     glfwWindowHint(GLFW_SCALE_TO_MONITOR , GL_TRUE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
 
     lv_app_init(&app);
 

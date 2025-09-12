@@ -39,7 +39,7 @@
 #include <GLFW/glfw3.h>
 
 #include "nanovg.h"
-#define NANOVG_GLES3
+#define NANOVG_GL3
 #include "nanovg_gl.h"
 #include "nanovg_gl_utils.h"
 
@@ -107,7 +107,7 @@ void lv_app_imgui_init(lv_app *app)
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(app->window, true);
-    ImGui_ImplOpenGL3_Init("#version 130");
+    ImGui_ImplOpenGL3_Init("#version 150");
 
     ImFontConfig icons_config;
     icons_config.MergeMode = true;

@@ -35,7 +35,7 @@ static void lv_nanovg_vg_init(lv_context* ctx, void *arg)
 
     lv_debug("trace: lv_nanovg_vg_init\n");
     lv_nanovg_vg_context *priv = lv_type_new(lv_nanovg_vg_context);
-    priv->vg = nvgCreateGLES3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
+    priv->vg = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
     if (!priv->vg) {
         lv_panic("lv_context_init: error initializing nanovg\n");
     }
@@ -48,7 +48,7 @@ static void lv_nanovg_vg_destroy(lv_context* ctx)
 {
     lv_debug("trace: lv_nanovg_vg_destroy\n");
     lv_nanovg_vg_context *priv = (lv_nanovg_vg_context*)ctx->priv;
-    nvgDeleteGLES3(priv->vg);
+    nvgDeleteGL3(priv->vg);
     free(ctx->priv);
 }
 
