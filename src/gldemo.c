@@ -26,6 +26,11 @@
 #include <sys/stat.h>
 #include <time.h>
 
+#ifdef _WIN32
+#include <malloc.h>
+#define alloca _alloca
+#endif
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -444,7 +449,7 @@ void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
     float f = global_scale * app->zodiac_offset;
     vec4 x0, y0, z0;
 
-    lv_oid_idx zidx[data_count];
+    lv_oid_idx *zidx = alloca(data_count * sizeof(lv_oid_idx));
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
