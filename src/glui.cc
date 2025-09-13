@@ -282,8 +282,8 @@ void lv_imgui(lv_app* app, float w, float h, float r)
         app->playback = app->timedisp = 0;
     }
 
-    if (ImGui::Button(app->playback  ? "\uf04c##playback"
-                                     : "\uf04b##playback", ImVec2(36, 36))) {
+    if (ImGui::Button(app->playback  ? u8"\uf04c##playback"
+                                     : u8"\uf04b##playback", ImVec2(36, 36))) {
         app->playback = !app->playback;
         if (app->playback) app->timedisp = 0;
     }
@@ -311,7 +311,7 @@ void lv_imgui(lv_app* app, float w, float h, float r)
     ImGui::SameLine();
     ImGui::PushStyleColor(ImGuiCol_Text,
         app->timedisp ? IM_COL32(255,255,255,255) : IM_COL32(127,127,127,255));
-    if (ImGui::Button("\uf017##timenow")) {
+    if (ImGui::Button(u8"\uf017##timenow")) {
         app->timedisp = !app->timedisp;
         if (app->timedisp) app->playback = 0;
     }
