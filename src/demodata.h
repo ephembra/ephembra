@@ -20,6 +20,10 @@
 
 #include "ephembra.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct lv_oid lv_oid;
 typedef struct lv_oid_idx lv_oid_idx;
 typedef struct lv_sign lv_sign;
@@ -52,3 +56,7 @@ extern lv_oid data[];
 extern lv_sign signs[];
 extern size_t data_count;
 extern size_t sign_count;
+
+#ifdef __cplusplus
+}
+#endif
