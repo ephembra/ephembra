@@ -370,7 +370,8 @@ static buffer load_file(const char *filename)
             filename, statbuf.st_size, nread);
         exit(1);
     }
-    return (buffer){buf, (size_t)statbuf.st_size};
+    buffer b = {buf, (size_t)statbuf.st_size};
+    return b;
 }
 
 /*

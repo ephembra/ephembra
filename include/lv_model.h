@@ -414,11 +414,12 @@ static float vec2f_cross(vec2f v1, vec2f v2)
 
 static vec3f vec3f_cross(vec3f v1, vec3f v2)
 {
-    return (vec3f) {
+    vec3f v = {
         v1.y * v2.z - v1.z * v2.y,
         v1.z * v2.x - v1.x * v2.z,
         v1.x * v2.y - v1.y * v2.x
     };
+    return v;
 }
 
 static vec3f vec3f_cross3(vec3f a, vec3f b, vec3f c)
@@ -432,13 +433,22 @@ static vec3f vec3f_cross3(vec3f a, vec3f b, vec3f c)
 static vec2f vec2f_normalize(vec2f v)
 {
     float r = sqrtf(vec2f_dot(v, v));
-    return (r > 0) ? (vec2f) { v.x / r, v.y / r } : v;
+    if (r > 0) {
+        v.x = v.x / r;
+        v.y = v.y / r;
+    }
+    return v;
 }
 
 static vec3f vec3f_normalize(vec3f v)
 {
     float r = sqrtf(vec3f_dot(v, v));
-    return (r > 0) ? (vec3f) { v.x / r, v.y / r, v.z / r } : v;
+    if (r > 0) {
+        v.x = v.x / r;
+        v.y = v.y / r;
+        v.z = v.z / r;
+    }
+    return v;
 }
 
 static vec2f vec2f_2d_project(vec2f v, mat4x4 m)

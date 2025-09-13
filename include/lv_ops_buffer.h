@@ -16,6 +16,11 @@
 
 #pragma once
 
+#ifdef _WIN32
+#include <malloc.h>
+#define alloca _alloca
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -702,7 +707,7 @@ static void lv_buffer_vg_playback(lv_context * src, lv_context * dst)
             lv_vg_stroke(dst);
             break;
         case lv_cmd_2d_translate:
-            v0 = (vec2f){ f[i+0], f[i+1] };
+            v0.x = f[i+0]; v0.y = f[i+1];
             i += 2;
             lv_vg_2d_translate(dst, v0);
             break;
@@ -722,69 +727,69 @@ static void lv_buffer_vg_playback(lv_context * src, lv_context * dst)
             lv_vg_2d_skew_y(dst, f0);
             break;
         case lv_cmd_2d_scale:
-            v0 = (vec2f){ f[i+0], f[i+1] };
+            v0.x = f[i+0]; v0.y = f[i+1];
             i += 2;
             lv_vg_2d_scale(dst, v0);
             break;
         case lv_cmd_2d_move_to:
-            v0 = (vec2f){ f[i+0], f[i+1] };
+            v0.x = f[i+0]; v0.y = f[i+1];
             i += 2;
             lv_vg_2d_move_to(dst, v0);
             break;
         case lv_cmd_2d_line_to:
-            v0 = (vec2f){ f[i+0], f[i+1] };
+            v0.x = f[i+0]; v0.y = f[i+1];
             i += 2;
             lv_vg_2d_line_to(dst, v0);
             break;
         case lv_cmd_2d_quadratic_to:
-            v0 = (vec2f){ f[i+0], f[i+1] };
-            v1 = (vec2f){ f[i+2], f[i+3] };
+            v0.x = f[i+0]; v0.y = f[i+1];
+            v1.x = f[i+2]; v1.y = f[i+3];
             i += 4;
             lv_vg_2d_quadratic_to(dst, v0, v1);
             break;
         case lv_cmd_2d_bezier_to:
-            v0 = (vec2f){ f[i+0], f[i+1] };
-            v1 = (vec2f){ f[i+2], f[i+3] };
-            v2 = (vec2f){ f[i+4], f[i+5] };
+            v0.x = f[i+0]; v0.y = f[i+1];
+            v1.x = f[i+2]; v1.y = f[i+3];
+            v2.x = f[i+4]; v2.y = f[i+5];
             i += 6;
             lv_vg_2d_bezier_to(dst, v0, v1, v2);
             break;
         case lv_cmd_2d_arc_to:
-            v0 = (vec2f){ f[i+0], f[i+1] };
-            v1 = (vec2f){ f[i+2], f[i+3] };
+            v0.x = f[i+0]; v0.y = f[i+1];
+            v1.x = f[i+2]; v1.y = f[i+3];
             f0 = f[i+4];
             i += 5;
             lv_vg_2d_arc_to(dst, v0, v1, f0);
             break;
         case lv_cmd_2d_arc:
-            v0 = (vec2f){ f[i+0], f[i+1] };
+            v0.x = f[i+0]; v0.y = f[i+1];
             f0 = f[i+2];
-            v1 = (vec2f){ f[i+3], f[i+4] };
+            v1.x = f[i+3]; v1.y = f[i+4];
             p0 = p[i+5];
             i += 6;
             lv_vg_2d_arc(dst, v0, f0, v1, p0);
             break;
         case lv_cmd_2d_rect:
-            v0 = (vec2f){ f[i+0], f[i+1] };
-            v1 = (vec2f){ f[i+2], f[i+3] };
+            v0.x = f[i+0]; v0.y = f[i+1];
+            v1.x = f[i+2]; v1.y = f[i+3];
             i += 4;
             lv_vg_2d_rect(dst, v0, v1);
             break;
         case lv_cmd_2d_rounded_rect:
-            v0 = (vec2f){ f[i+0], f[i+1] };
-            v1 = (vec2f){ f[i+2], f[i+3] };
+            v0.x = f[i+0]; v0.y = f[i+1];
+            v1.x = f[i+2]; v1.y = f[i+3];
             f0 = f[i+4];
             i += 5;
             lv_vg_2d_rounded_rect(dst, v0, v1, f0);
             break;
         case lv_cmd_2d_ellipse:
-            v0 = (vec2f){ f[i+0], f[i+1] };
-            v1 = (vec2f){ f[i+2], f[i+3] };
+            v0.x = f[i+0]; v0.y = f[i+1];
+            v1.x = f[i+2]; v1.y = f[i+3];
             i += 4;
             lv_vg_2d_ellipse(dst, v0, v1);
             break;
         case lv_cmd_2d_circle:
-            v0 = (vec2f){ f[i+0], f[i+1] };
+            v0.x = f[i+0]; v0.y = f[i+1];
             f0 = f[i+2];
             i += 3;
             lv_vg_2d_circle(dst, v0, f0);
@@ -826,7 +831,7 @@ static void lv_buffer_vg_playback(lv_context * src, lv_context * dst)
             /* nop */
             break;
         case lv_cmd_2d_text_draw:
-            v0 = (vec2f){ f[i+0], f[i+1] };
+            v0.x = f[i+0]; v0.y = f[i+1];
             p0 = p[i+2];
             str = (char*)alloca(p0+1);
             memcpy(str, (const char*)&p[i+3], p0);
@@ -840,41 +845,41 @@ static void lv_buffer_vg_playback(lv_context * src, lv_context * dst)
             lv_vg_3d_transform(dst, m0);
             break;
         case lv_cmd_3d_translate:
-            w0 = (vec3f){ f[i+0], f[i+1], f[i+2] };
+            w0.x = f[i+0]; w0.y = f[i+1]; w0.z = f[i+2];
             i += 3;
             lv_vg_3d_translate(dst, w0);
             break;
         case lv_cmd_3d_rotate:
-            w0 = (vec3f){ f[i+0], f[i+1], f[i+2] };
+            w0.x = f[i+0]; w0.y = f[i+1]; w0.z = f[i+2];
             f0 = f[i+3];
             i += 4;
             lv_vg_3d_rotate(dst, w0, f0);
             break;
         case lv_cmd_3d_scale:
-            w0 = (vec3f){ f[i+0], f[i+1], f[i+2] };
+            w0.x = f[i+0]; w0.y = f[i+1]; w0.z = f[i+2];
             i += 3;
             lv_vg_3d_scale(dst, w0);
             break;
         case lv_cmd_3d_move_to:
-            w0 = (vec3f){ f[i+0], f[i+1], f[i+2] };
+            w0.x = f[i+0]; w0.y = f[i+1]; w0.z = f[i+2];
             i += 3;
             lv_vg_3d_move_to(dst, w0);
             break;
         case lv_cmd_3d_line_to:
-            w0 = (vec3f){ f[i+0], f[i+1], f[i+2] };
+            w0.x = f[i+0]; w0.y = f[i+1]; w0.z = f[i+2];
             i += 3;
             lv_vg_3d_line_to(dst, w0);
             break;
         case lv_cmd_3d_quadratic_to:
-            w0 = (vec3f){ f[i+0], f[i+1], f[i+2] };
-            w1 = (vec3f){ f[i+3], f[i+4], f[i+5] };
+            w0.x = f[i+0]; w0.y = f[i+1]; w0.z = f[i+2];
+            w1.x = f[i+3]; w1.y = f[i+4]; w1.z = f[i+5];
             i += 6;
             lv_vg_3d_quadratic_to(dst, w0, w1);
             break;
         case lv_cmd_3d_bezier_to:
-            w0 = (vec3f){ f[i+0], f[i+1], f[i+2] };
-            w1 = (vec3f){ f[i+3], f[i+4], f[i+5] };
-            w2 = (vec3f){ f[i+6], f[i+7], f[i+8] };
+            w0.x = f[i+0]; w0.y = f[i+1]; w0.z = f[i+2];
+            w1.x = f[i+3]; w1.y = f[i+4]; w1.z = f[i+5];
+            w2.x = f[i+6]; w2.y = f[i+7]; w2.z = f[i+8];
             i += 9;
             lv_vg_3d_bezier_to(dst, w0, w1, w2);
             break;
