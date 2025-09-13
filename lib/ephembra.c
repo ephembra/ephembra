@@ -82,7 +82,7 @@ void de440_create_ephem(ephem_ctx *ctx, const char *ephem_bin)
     FILE *f;
     size_t dsize, nbytes;
 
-    f = fopen(ephem_bin, "r");
+    f = fopen(ephem_bin, "rb");
     if (!f) {
         ephem_error("fopen: failed: %s", ephem_bin);        
     }

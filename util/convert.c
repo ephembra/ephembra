@@ -39,7 +39,7 @@ void convert(const char *ephem_mat, const char *ephem_bin)
         }
     }
 
-    out = fopen(ephem_bin, "w");
+    out = fopen(ephem_bin, "wb");
     if (!out) {
         ephem_error("fopen: failed: %s", ephem_bin);
     }
