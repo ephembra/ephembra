@@ -25,10 +25,12 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <limits.h>
 
 #ifdef _WIN32
 #include <malloc.h>
 #define alloca _alloca
+#define PATH_MAX 1024
 #endif
 
 #define _USE_MATH_DEFINES
@@ -60,16 +62,17 @@
 #include "lv_ops_buffer.h"
 #include "lv_ops_xform.h"
 
+#include "osutil.h"
 #include "demolib.h"
 #include "demodata.h"
 
 #include "gldemo.h"
 
-const char* ephembra_data_file = "build/data/DE440Coeff.bin";
+const char* ephembra_data_file = "resources/data/DE440Coeff.bin";
 const char* ephembra_sans_font = "resources/fonts/DejaVuSans.ttf";
 const char* ephembra_mono_font = "resources/fonts/DejaVuSansMono.ttf";
 const char* ephembra_awes_font = "resources/fonts/fontawesome-webfont.ttf";
-const char* ephembra_image_tmpl = "resources/images/%s.png";
+const char* ephembra_image_tmpl = "%s/resources/images/%s.png";
 
 static const float min_zoom = 2.0f, max_zoom = 2048.0f;
 static const float global_scale = 1e12f;
@@ -162,20 +165,38 @@ static void lv_current_date(lv_app *app)
 
 void lv_ephem_init(lv_app *app)
 {
+    char ephembra_data_file_rsrc[PATH_MAX];
+    char ephembra_sans_font_rsrc[PATH_MAX];
+    char ephembra_mono_font_rsrc[PATH_MAX];
+    char executable_dir[PATH_MAX];
+
     NVGcontext *vg = *(NVGcontext**)app->ctx_nanovg->priv;
 
-    nvgCreateFont(vg, "mono", ephembra_mono_font);
-    nvgCreateFont(vg, "sans", ephembra_sans_font);
+    if (get_resource_path(ephembra_data_file_rsrc,
+        sizeof(ephembra_data_file_rsrc), ephembra_data_file) != 0 ||
+        get_resource_path(ephembra_sans_font_rsrc,
+        sizeof(ephembra_sans_font_rsrc), ephembra_sans_font) != 0 ||
+        get_resource_path(ephembra_mono_font_rsrc,
+        sizeof(ephembra_mono_font_rsrc), ephembra_mono_font) != 0 ||
+        get_executable_dir(executable_dir, sizeof(executable_dir)) != 0)
+    {
+        fprintf(stderr, "lv_ephem_init: failed to locate resources\n");
+        exit(1);
+    }
 
-    de440_create_ephem(&app->ctx, ephembra_data_file);
+    nvgCreateFont(vg, "mono", ephembra_mono_font_rsrc);
+    nvgCreateFont(vg, "sans", ephembra_sans_font_rsrc);
+
+    de440_create_ephem(&app->ctx, ephembra_data_file_rsrc);
     app->eph = (double*)malloc(ephem_id_Last * app->steps * sizeof(double) * 3);
     lv_current_date(app);
 
     app->images = (int*)malloc(data_count * sizeof(int));
     for (size_t idx = 0; idx < data_count; idx++)
     {
-        char path[64];
-        snprintf(path, sizeof(path), ephembra_image_tmpl, data[idx].name);
+        char path[PATH_MAX];
+        snprintf(path, sizeof(path),
+            ephembra_image_tmpl, executable_dir, data[idx].name);
         app->images[idx] = nvgCreateImage(vg, path, NVG_IMAGE_GENERATE_MIPMAPS);
     }
 }

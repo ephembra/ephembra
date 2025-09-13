@@ -25,9 +25,15 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <limits.h>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
+
+#ifdef _WIN32
+#include <malloc.h>
+#define PATH_MAX 1024
+#endif
 
 #ifdef HAVE_GLAD
 #include <glad/glad.h>
@@ -60,6 +66,7 @@
 
 #include "demolib.h"
 #include "demodata.h"
+#include "osutil.h"
 
 #include "gldemo.h"
 
@@ -103,6 +110,18 @@ void lv_vg_udestroy(lv_app* app)
 
 void lv_app_imgui_init(lv_app *app)
 {
+    char ephembra_mono_font_rsrc[PATH_MAX];
+    char ephembra_awes_font_rsrc[PATH_MAX];
+
+    if (get_resource_path(ephembra_mono_font_rsrc,
+        sizeof(ephembra_mono_font_rsrc), ephembra_mono_font) != 0 ||
+        get_resource_path(ephembra_awes_font_rsrc,
+        sizeof(ephembra_awes_font_rsrc), ephembra_awes_font) != 0)
+    {
+        fprintf(stderr, "lv_app_imgui_init: failed to locate resources\n");
+        exit(1);
+    }
+
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
@@ -116,8 +135,8 @@ void lv_app_imgui_init(lv_app *app)
 
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->Clear();
-    io.Fonts->AddFontFromFileTTF(ephembra_mono_font, 14.0f);
-    io.Fonts->AddFontFromFileTTF(ephembra_awes_font, 14.0f,
+    io.Fonts->AddFontFromFileTTF(ephembra_mono_font_rsrc, 14.0f);
+    io.Fonts->AddFontFromFileTTF(ephembra_awes_font_rsrc, 14.0f,
         &icons_config, icons_ranges);
     io.Fonts->Build();
     io.FontGlobalScale = app->ui_scale;

@@ -129,7 +129,7 @@ endmacro()
 string(CONCAT ephembra_data_url
     "https://media.githubusercontent.com/media/ephembra/"
     "ephembra-data/refs/heads/trunk/data/DE440Coeff.bin")
-set(ephembra_data_file ${PROJECT_BINARY_DIR}/data/DE440Coeff.bin)
+set(ephembra_data_file ${CMAKE_BINARY_DIR}/resources/data/DE440Coeff.bin)
 add_custom_command(OUTPUT ${ephembra_data_file}
     COMMAND ${PROJECT_SOURCE_DIR}/scripts/fetch.py
     ARGS ${ephembra_data_url} ${ephembra_data_file})
@@ -169,12 +169,39 @@ target_link_libraries(demo PRIVATE ephembra)
 add_executable(convert util/convert.c)
 target_link_libraries(convert PRIVATE z matio ephembra)
 
+set(gldemo_fonts
+  resources/fonts/fontawesome-webfont.ttf
+  resources/fonts/DejaVuSans.ttf
+  resources/fonts/DejaVuSansMono.ttf)
+set(gldemo_images
+  resources/images/Saturn.png
+  resources/images/Uranus.png
+  resources/images/Sun.png
+  resources/images/Moon.png
+  resources/images/Mars.png
+  resources/images/Earth.png
+  resources/images/Jupiter.png
+  resources/images/Neptune.png
+  resources/images/Mercury.png
+  resources/images/Pluto.png
+  resources/images/Venus.png)
+
+foreach(rsrc ${gldemo_fonts})
+  file(COPY ${CMAKE_SOURCE_DIR}/${rsrc}
+       DESTINATION ${CMAKE_BINARY_DIR}/resources/fonts/)
+endforeach()
+foreach(rsrc ${gldemo_images})
+  file(COPY ${CMAKE_SOURCE_DIR}/${rsrc}
+       DESTINATION ${CMAKE_BINARY_DIR}/resources/images/)
+endforeach()
+
 list(PREPEND GLFW_LIBS_ALL z matio ephembra nanovg imgui)
 add_executable(gldemo
     src/glui.cc
     src/gldemo.c
     src/demodata.c
     src/demolib.c
+    src/osutil.c
     src/stb_image.c
     src/nanovg_gles3.c)
 gl_cprogram(gldemo)
