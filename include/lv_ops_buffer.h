@@ -377,7 +377,7 @@ static void lv_buffer_vg_2d_text_font(lv_context * ctx, const char *font)
 {
     lv_debug("trace: lv_buffer_vg_2d_text_font: %s\n", font);
     lv_buffer_vg_context *priv = (lv_buffer_vg_context*)ctx->priv;
-    uint len = strlen(font);
+    uint len = (uint)strlen(font);
     uint cmd[] = { lv_cmd_2d_text_font, len };
     array_buffer_append(&priv->buf, cmd);
     array_buffer_append_impl(&priv->buf, (void*)font, len);
@@ -443,7 +443,7 @@ static void lv_buffer_vg_2d_text_draw(lv_context * ctx, vec2f v0, const char *te
 {
     lv_debug("trace: lv_buffer_vg_2d_text_draw: %f %f %s\n", v0.x, v0.y, text);
     lv_buffer_vg_context *priv = (lv_buffer_vg_context*)ctx->priv;
-    uint len = strlen(text);
+    uint len = (uint)strlen(text);
     uint cmd[] = { lv_cmd_2d_text_draw };
     float param[] = { v0.x, v0.y };
     uint slen[] = { len };
