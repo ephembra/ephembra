@@ -219,14 +219,17 @@ void lv_iau2006_precession_matrix(mat4x4 R, double jd)
     double T = (jd - 2451545.0) / 36525.0;
 
     /* Precession angles in arcseconds */
-    double zeta_A = (2306.083227*T + 0.2988499*T*T + 0.01801828*T*T*T
-        - 0.000005971*T*T*T*T - 0.0000003173*T*T*T*T*T) * ASEC2RAD;
+    float zeta_A = (float)
+        ((2306.083227*T + 0.2988499*T*T + 0.01801828*T*T*T
+          - 0.000005971*T*T*T*T - 0.0000003173*T*T*T*T*T) * ASEC2RAD);
 
-    double theta_A = (2004.191903*T - 0.4294934*T*T - 0.04182264*T*T*T
-        - 0.000007089*T*T*T*T - 0.0000001274*T*T*T*T*T) * ASEC2RAD;
+    float theta_A = (float)
+        ((2004.191903*T - 0.4294934*T*T - 0.04182264*T*T*T
+          - 0.000007089*T*T*T*T - 0.0000001274*T*T*T*T*T) * ASEC2RAD);
 
-    double z_A = (2306.077181*T + 1.0927348*T*T + 0.01826837*T*T*T
-        - 0.000028596*T*T*T*T - 0.0000002904*T*T*T*T*T) * ASEC2RAD;
+    float z_A = (float)
+        ((2306.077181*T + 1.0927348*T*T + 0.01826837*T*T*T
+          - 0.000028596*T*T*T*T - 0.0000002904*T*T*T*T*T) * ASEC2RAD);
 
     mat4x4 Rz1, Ry, Rz2, Rtmp;
 
@@ -235,16 +238,16 @@ void lv_iau2006_precession_matrix(mat4x4 R, double jd)
     mat4x4_identity(Rz2);
 
     /* Rz(-zeta_A) */
-    Rz1[0][0] = cos(-zeta_A); Rz1[0][1] = -sin(-zeta_A);
-    Rz1[1][0] = sin(-zeta_A); Rz1[1][1] =  cos(-zeta_A);
+    Rz1[0][0] = cosf(-zeta_A); Rz1[0][1] = -sinf(-zeta_A);
+    Rz1[1][0] = sinf(-zeta_A); Rz1[1][1] =  cosf(-zeta_A);
 
     /* Ry(theta_A) */
-    Ry[0][0] =  cos(theta_A); Ry[0][2] = sin(theta_A);
-    Ry[2][0] = -sin(theta_A); Ry[2][2] = cos(theta_A);
+    Ry[0][0] =  cosf(theta_A); Ry[0][2] = sinf(theta_A);
+    Ry[2][0] = -sinf(theta_A); Ry[2][2] = cosf(theta_A);
 
     /* Rz(-z_A) */
-    Rz2[0][0] = cos(-z_A); Rz2[0][1] = -sin(-z_A);
-    Rz2[1][0] = sin(-z_A); Rz2[1][1] =  cos(-z_A);
+    Rz2[0][0] = cosf(-z_A); Rz2[0][1] = -sinf(-z_A);
+    Rz2[1][0] = sinf(-z_A); Rz2[1][1] =  cosf(-z_A);
 
     /* Multiply: R = Rz2 * Ry * Rz1 */
     mat4x4_mul(Rtmp, Ry, Rz1);

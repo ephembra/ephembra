@@ -100,11 +100,11 @@ void lv_iau2006_dynamic_matrix(lv_app *app, mat4x4 m);
 void lv_iau2006_dynamic_basis(lv_app *app, vec3 x0, vec3 y0, vec3 z0);
 void lv_grid_3d(lv_app *app, lv_context* ctx);
 void lv_zodiac_3d(lv_app *app, lv_context* ctx);
-void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h);
+void lv_zodiac_2d(lv_app *app, lv_context* ctx, int w, int h);
 void lv_planets_3d(lv_app *app, lv_context* ctx);
-void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h);
-void lv_render(lv_app* app, float w, float h, float r);
-void lv_imgui(lv_app* app, float w, float h, float r);
+void lv_planets_2d(lv_app *app, lv_context* ctx, int w, int h);
+void lv_render(lv_app* app, int w, int h, float r);
+void lv_imgui(lv_app* app, int w, int h, float r);
 void lv_app_main(int argc, char **argv);
 
 static inline size_t lv_steps(lv_app *app) { return app->steps; }

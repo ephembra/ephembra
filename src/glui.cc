@@ -256,7 +256,7 @@ static void lv_font_size(const char *label, int *font_size)
     }
 }
 
-void lv_imgui(lv_app* app, float w, float h, float r)
+void lv_imgui(lv_app* app, int w, int h, float r)
 {
     char date_text[128];
 
@@ -399,7 +399,7 @@ void lv_imgui(lv_app* app, float w, float h, float r)
             a = vector_angle_deg(p[0], p[1]);
 
             deg = (int)floorf(a);
-            min = (int)floorf((a - deg) * 60.0);
+            min = (int)floorf((a - deg) * 60.0f);
             sid = deg / 30;
 
             ImGui::TableNextRow();

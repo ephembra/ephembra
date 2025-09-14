@@ -24,73 +24,73 @@ lv_oid data[11] = {
     {
         ephem_id_Sun,
         "☉", "Sun",            1000000,    695700,      0.000,
-        { 1.00, 0.84, 0.00, 1.0 } /* golden-yellow photosphere */
+        { 1.00f, 0.84f, 0.00f, 1.0f } /* golden-yellow photosphere */
     },
     {
         ephem_id_Moon,
         "☽", "Moon",         149598023,      3474,     27.320,
-        { 0.75, 0.75, 0.75, 1.0 } /* pale grey */
+        { 0.75f, 0.75f, 0.75f, 1.0f } /* pale grey */
     },
     {
         ephem_id_Mercury_Barycenter,
         "☿", "Mercury",       57909227,      4879,     87.969,
-        { 0.60, 0.60, 0.60, 1.0 } /* mid-grey, rocky */
+        { 0.60f, 0.60f, 0.60f, 1.0f } /* mid-grey, rocky */
     },
     {
         ephem_id_Venus_Barycenter,
         "♀", "Venus",        108209475,     12104,    224.701,
-        { 0.96, 0.89, 0.70, 1.0 } /* pale golden cream */
+        { 0.96f, 0.89f, 0.70f, 1.0f } /* pale golden cream */
     },
     {
         ephem_id_Earth,
         "♁", "Earth",        149598023,     12742,    365.256,
-        { 0.27, 0.55, 0.68, 1.0 } /* blue-green oceans/land */
+        { 0.27f, 0.55f, 0.68f, 1.0f } /* blue-green oceans/land */
     },
     {
         ephem_id_Mars_Barycenter,
         "♂", "Mars",         227939200,      6779,    686.980,
-        { 0.70, 0.40, 0.35, 1.0 } /* reddish-orange dusty soil */
+        { 0.70f, 0.40f, 0.35f, 1.0f } /* reddish-orange dusty soil */
     },
     {
         ephem_id_Jupiter_Barycenter,
         "♃", "Jupiter",      778340821,    139820,   4332.589,
-        { 0.87, 0.72, 0.53, 1.0 } /* beige bands with light brown */
+        { 0.87f, 0.72f, 0.53f, 1.0f } /* beige bands with light brown */
     },
     {
         ephem_id_Saturn_Barycenter,
         "♄", "Saturn",      1426666422,    116460,  10759.220,
-        { 0.93, 0.85, 0.63, 1.0 } /* pale yellow-brown */
+        { 0.93f, 0.85f, 0.63f, 1.0f } /* pale yellow-brown */
     },
     {
         ephem_id_Uranus_Barycenter,
         "♅", "Uranus",      2870658186,     50724,  30687.000,
-        { 0.56, 0.75, 0.82, 1.0 } /* pale cyan */
+        { 0.56f, 0.75f, 0.82f, 1.0f } /* pale cyan */
     },
     {
         ephem_id_Neptune_Barycenter,
         "♆", "Neptune",     4498396441,     49244,  60190.000,
-        { 0.28, 0.35, 0.68, 1.0 } /* deep azure blue */
+        { 0.28f, 0.35f, 0.68f, 1.0f } /* deep azure blue */
     },
     {
         ephem_id_Pluto_Barycenter,
         "♇", "Pluto",       5906376272,      2377,  90560.000,
-        { 0.72, 0.62, 0.57, 1.0 } /* light brown-grey, icy patches */
+        { 0.72f, 0.62f, 0.57f, 1.0f } /* light brown-grey, icy patches */
     },
 };
 
 lv_sign signs[12] = {
-    { "♈", "Aries",       { 0.937, 0.325, 0.314, 1.000 } }, /* U+2648 */
-    { "♉", "Taurus",      { 1.000, 0.439, 0.263, 1.000 } }, /* U+2649 */
-    { "♊", "Gemini",      { 1.000, 0.655, 0.149, 1.000 } }, /* U+264A */
-    { "♋", "Cancer",      { 1.000, 0.800, 0.196, 1.000 } }, /* U+264B */
-    { "♌", "Leo",         { 0.988, 0.894, 0.220, 1.000 } }, /* U+264C */
-    { "♍", "Virgo",       { 0.612, 0.800, 0.396, 1.000 } }, /* U+264D */
-    { "♎", "Libra",       { 0.400, 0.733, 0.416, 1.000 } }, /* U+264E */
-    { "♏", "Scorpio",     { 0.149, 0.651, 0.604, 1.000 } }, /* U+264F */
-    { "♐", "Sagittarius", { 0.980, 0.463, 0.824, 1.000 } }, /* U+2650 */
-    { "♑", "Capricorn",   { 0.494, 0.341, 0.761, 1.000 } }, /* U+2651 */
-    { "♒", "Aquarius",    { 0.671, 0.278, 0.737, 1.000 } }, /* U+2652 */
-    { "♓", "Pisces",      { 0.925, 0.251, 0.478, 1.000 } }  /* U+2653 */
+    { "♈", "Aries",       { 0.937f, 0.325f, 0.314f, 1.0f } }, /* U+2648 */
+    { "♉", "Taurus",      { 1.000f, 0.439f, 0.263f, 1.0f } }, /* U+2649 */
+    { "♊", "Gemini",      { 1.000f, 0.655f, 0.149f, 1.0f } }, /* U+264A */
+    { "♋", "Cancer",      { 1.000f, 0.800f, 0.196f, 1.0f } }, /* U+264B */
+    { "♌", "Leo",         { 0.988f, 0.894f, 0.220f, 1.0f } }, /* U+264C */
+    { "♍", "Virgo",       { 0.612f, 0.800f, 0.396f, 1.0f } }, /* U+264D */
+    { "♎", "Libra",       { 0.400f, 0.733f, 0.416f, 1.0f } }, /* U+264E */
+    { "♏", "Scorpio",     { 0.149f, 0.651f, 0.604f, 1.0f } }, /* U+264F */
+    { "♐", "Sagittarius", { 0.980f, 0.463f, 0.824f, 1.0f } }, /* U+2650 */
+    { "♑", "Capricorn",   { 0.494f, 0.341f, 0.761f, 1.0f } }, /* U+2651 */
+    { "♒", "Aquarius",    { 0.671f, 0.278f, 0.737f, 1.0f } }, /* U+2652 */
+    { "♓", "Pisces",      { 0.925f, 0.251f, 0.478f, 1.0f } }  /* U+2653 */
 };
 
 size_t data_count = countof(data);

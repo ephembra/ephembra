@@ -72,14 +72,14 @@ const char* ephembra_awes_font = "resources/fonts/fontawesome-webfont.ttf";
 const char* ephembra_image_tmpl = "resources/images/%s.png";
 
 static const float min_zoom = 2.0f, max_zoom = 2048.0f;
-static const float global_scale = 1e12;
+static const float global_scale = 1e12f;
 
 static int opt_help;
 static int opt_width = 1280;
 static int opt_height = 720;
 
-static lv_color grey = { 0.4980, 0.4980, 0.4980, 1.0 };
-static lv_color white = { 0.8157, 0.8157, 0.8157, 1.0 };
+static lv_color grey = { 0.4980f, 0.4980f, 0.4980f, 1.0f };
+static lv_color white = { 0.8157f, 0.8157f, 0.8157f, 1.0f };
 
 /*
  * gldemo
@@ -129,12 +129,12 @@ static void lv_date_to_slider(lv_app *app)
 {
     if (app->jd - 0.5 < app->sjd) {
         app->cjd = app->sjd;
-        app->cjdf = app->jd - 0.5 - app->sjd;
+        app->cjdf = (int)(app->jd - 0.5 - app->sjd);
     } else if (app->jd - 0.5 > app->ejd) {
         app->cjd = app->ejd;
-        app->cjdf = app->jd - 0.5 - app->ejd;
+        app->cjdf = (int)(app->jd - 0.5 - app->ejd);
     } else {
-        app->cjd = app->jd;
+        app->cjd = (int)app->jd;
         app->cjdf = 0;
     }
 }
@@ -323,7 +323,7 @@ void lv_zodiac_3d(lv_app *app, lv_context* ctx)
         lv_vg_3d_move_to(ctx, lv_point_3d(p0[0], p0[1], p0[2]));
         for (int j = 0; j < 31; j++)
         {
-            float theta = 2.0f * M_PI * (i*30.0f+j) / 360.0f;
+            float theta = 2.0f * (float)M_PI * (i*30.0f+j) / 360.0f;
             vec3 p1;
             vec3_sincos_basis(p1, theta, x0, y0, z0, f, g);
             lv_vg_3d_line_to(ctx, lv_point_3d(p1[0], p1[1], p1[2]));
@@ -358,7 +358,7 @@ void lv_zodiac_3d(lv_app *app, lv_context* ctx)
     }
 }
 
-void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
+void lv_zodiac_2d(lv_app *app, lv_context* ctx, int w, int h)
 {
     NVGcontext *vg = *(NVGcontext**)app->ctx_nanovg->priv;
 
@@ -371,7 +371,7 @@ void lv_zodiac_2d(lv_app *app, lv_context* ctx, float w, float h)
     for (int i = 0; i < 12; i++)
     {
         vec3 p, q;
-        float theta = 2.0f * M_PI * (i*30.0f+15.0f) / 360.0f;
+        float theta = 2.0f * (float)M_PI * (i*30.0f+15.0f) / 360.0f;
         float symbol_size = app->symbol_size * app->ui_scale;
 
         vec3_sincos_basis(p, theta, x0, y0, z0, f, g);
@@ -442,7 +442,7 @@ void lv_planets_3d(lv_app *app, lv_context* ctx)
     }
 }
 
-void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
+void lv_planets_2d(lv_app *app, lv_context* ctx, int w, int h)
 {
     NVGcontext *vg = *(NVGcontext**)app->ctx_nanovg->priv;
 
@@ -487,7 +487,7 @@ void lv_planets_2d(lv_app *app, lv_context* ctx, float w, float h)
         img = app->images[idx];
         nvgImageSize(vg, img, &iw, &ih);
 
-        r = data[idx].diameter / 139820.0; /* Jupiter */
+        r = (float)(data[idx].diameter / 139820.0); /* Jupiter */
         a = app->planet_scale / 50.0f;
         b = app->planet_scale / 25.0f;
         s = a + b * log10f(1.0f + 9.0f * r);
@@ -559,13 +559,12 @@ static inline void model_matrix_transform(lv_app *app,
     mat4x4_invert(app->m_inv, app->m_mvp);
 }
 
-void lv_render(lv_app* app, float w, float h, float r)
+void lv_render(lv_app* app, int w, int h, float r)
 {
     vec3 rot = { app->rot[0], app->rot[1], app->rot[2] };
     vec3 scale = { 1/global_scale, 1/global_scale, 1/global_scale };
     vec3 trans = { app->trans[0], app->trans[1], app->trans[2] + app->zoom };
     vec2f origin = { app->origin.x, app->origin.y };
-    mat4x4 m_model, m_proj;
     lv_context* ctx;
 
     if (app->date_valid) {
@@ -608,7 +607,7 @@ void lv_render(lv_app* app, float w, float h, float r)
 
     ctx = app->ctx_xform;
     lv_xform_proj_matrix(app->ctx_xform, app->m_mvp, 1);
-    lv_vg_begin_frame(ctx, w, h, r);
+    lv_vg_begin_frame(ctx, (float)w, (float)h, r);
     lv_vg_reset(ctx);
     lv_vg_push(ctx);
     lv_buffer_vg_playback(app->ctx_buffer, ctx);

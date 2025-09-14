@@ -43,13 +43,13 @@ struct lv_date
  * math functions
  */
 
-static inline float deg_rad(float a) { return a * M_PI / 180.0f; }
+static inline float deg_rad(float a) { return a * (float)M_PI / 180.0f; }
 
-static inline float rad_deg(float a) { return a * 180.0f / M_PI; }
+static inline float rad_deg(float a) { return a * 180.0f / (float)M_PI; }
 
 static inline float vector_angle_deg(float x, float y)
 {
-    float a = atan2f(y, x) * 180.0f / M_PI;
+    float a = atan2f(y, x) * 180.0f / (float)M_PI;
     return (a < 0) ? a + 360.0f : a;
 }
 
@@ -60,8 +60,8 @@ static inline float clampf(float x, float min_val, float max_val)
 
 static inline float mod_2pi(float x)
 {
-    float m = fmodf(x, 2.0f * M_PI);
-    return (m < 0.0f) ? m + 2.0f * M_PI : m;
+    float m = fmodf(x, 2.0f * (float)M_PI);
+    return (m < 0.0f) ? m + 2.0f * (float)M_PI : m;
 }
 
 /*
