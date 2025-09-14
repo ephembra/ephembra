@@ -820,12 +820,10 @@ static void lv_main_loop(GLFWwindow* window, lv_app *app)
 {
     double target_fps = 60.0;
     double frame_time = 1.0 / target_fps;
-    double last_time;
 
     while (!glfwWindowShouldClose(window))
     {
         double start_time = glfwGetTime();
-        double delta      = start_time - last_time;
 
         int win_width, win_height;
         int fb_width, fb_height;
@@ -849,8 +847,6 @@ static void lv_main_loop(GLFWwindow* window, lv_app *app)
             if (wait_time < 0.0) break;
             glfwWaitEventsTimeout(wait_time);
         }
-
-        last_time = glfwGetTime();
       }
 }
 
