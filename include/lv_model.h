@@ -475,9 +475,9 @@ static void mat4x4_rotate_make(mat4x4 m, vec3f v0, float a0)
 {
     v0 = vec3f_normalize(v0);
 
-    float ar = a0 * M_PI / 180.f;
-    float s = sin(ar);
-    float c = cos(ar);
+    float ar = a0 * (float)M_PI / 180.f;
+    float s = sinf(ar);
+    float c = cosf(ar);
     float a2 = v0.x * v0.x;
     float b2 = v0.y * v0.y;
     float c2 = v0.z * v0.z;
