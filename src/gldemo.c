@@ -91,7 +91,7 @@ static lv_color white = { 0.8157f, 0.8157f, 0.8157f, 1.0f };
 void lv_app_init(lv_app *app)
 {
     memset(app, 0, sizeof(lv_app));
-    app->zoom = 16.0f;
+    app->zoom = 19.0f;
     app->rot[0] = 65.0f;
     app->rot_oid = -1;
     app->rot_tjd = NAN;
@@ -122,9 +122,9 @@ void lv_app_init(lv_app *app)
     app->trail_width = 6.0f;
     app->line_width = 2.0f;
     app->planet_scale = 2.5f;
-    app->zodiac_layer = 0;
+    app->zodiac_layer = 1;
     app->symbol_offset = -0.05f;
-    app->zodiac_offset = 0.0f;
+    app->zodiac_offset = 0.556f;
     app->zodiac_scale = 9.0f;
 }
 
