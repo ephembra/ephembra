@@ -655,7 +655,7 @@ static int mouse_find_oid(lv_app *app, vec2f pos,
     float f = global_scale * app->zodiac_offset;
     vec3 snear = { pos.x, pos.y, 0.0f };
     vec3 sfar = { pos.x, pos.y, 1.0f };
-    vec3 near, far;
+    vec3 near, far, o1, o2;
     vec4 x0, y0, z0;
 
     glfwGetWindowSize(app->window, &win_width, &win_height);
@@ -672,21 +672,15 @@ static int mouse_find_oid(lv_app *app, vec2f pos,
         {
             double interval = data[idx].orbit / lv_steps(app);
             double tjd = jd - (i * interval);
-            double *o1 = lv_ephem_object(app, oid, i);
-            double *o2 = lv_ephem_object(app, oid, i + 1);
-            float z = -z0[2] * f + (float)(o1[2] + o2[2]) * 0.5f * s;
+            lv_ephem_object_vec3(app, oid, i,     o1, s);
+            lv_ephem_object_vec3(app, oid, i + 1, o2, s);
+            float z = -z0[2] * f + (float)(o1[2] + o2[2]) * 0.5f;
             float t = (z - near[2]) / (far[2] - near[2]);
             float px = far[0] * t + near[0] * (1.0f - t);
             float py = far[1] * t + near[1] * (1.0f - t);
             vec2 p = { px, py };
-            vec2 a = {
-                -z0[0] * f + (float)o1[0] * s,
-                -z0[1] * f + (float)o1[1] * s
-            };
-            vec2 b = {
-                -z0[0] * f + (float)o2[0] * s,
-                -z0[1] * f + (float)o2[1] * s
-            };
+            vec2 a = { -z0[0] * f + o1[0], -z0[1] * f + o1[1] };
+            vec2 b = { -z0[0] * f + o2[0], -z0[1] * f + o2[1] };
             float d = vec2_dist_point_line(p, a, b);
             if (d < epsilon) {
                 *sel_oid = oid;
