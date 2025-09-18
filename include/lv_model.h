@@ -63,18 +63,6 @@ static lv_log_level lv_ll = lv_ll_info;
 
 #define lv_args(...) LV_ARGS_DISP(lv_cmd_arg,__VA_ARGS__)
 
-struct lv_color {
-        union {
-                float rgba[4];
-                float hsva[4];
-                struct {
-                        float r,g,b,a;
-                        float h,s,v;
-                };
-        };
-};
-typedef struct lv_color lv_color;
-
 struct lv_paint {
         float xform[6];
         float extent[2];
@@ -299,46 +287,6 @@ static vec3f lv_point_3d(float x, float y, float z) { vec3f p = { x, y, z }; ret
 static vec4f lv_point_4d(float x, float y, float z, float w) { vec4f p = { x, y, z, w }; return p; }
 
 static vec3f lv_point_3d_2f(vec2f o, float z) { vec3f p = { o.x, o.y, z }; return p; }
-
-static lv_color lv_rgbf(float r, float g, float b)
-{
-    lv_color c = { r, g, b, 1.0f }; return c;
-}
-
-static lv_color lv_rgbaf(float r, float g, float b, float a)
-{
-    lv_color c = { r, g, b, a }; return c;
-}
-
-static lv_color lv_rgbf_array(float col[3])
-{
-    lv_color c = { col[0], col[1], col[2], 1.0f }; return c;
-}
-
-static lv_color lv_rgbaf_array(float col[4])
-{
-    lv_color c = { col[0], col[1], col[2], col[3] }; return c;
-}
-
-static lv_color lv_rgb(unsigned char r, unsigned char g, unsigned char b)
-{
-    return lv_rgbf(r / 255.0f, g / 255.0f, b / 255.0f);
-}
-
-static lv_color lv_rgba(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
-{
-    return lv_rgbaf(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f);
-}
-
-static lv_color lv_color_af(lv_color c, float a)
-{
-    return lv_rgbaf(c.r, c.g, c.b, a);
-}
-
-static lv_color lv_color_a(lv_color c, unsigned char a)
-{
-    return lv_rgbaf(c.r, c.g, c.b, a / 255.0f);
-}
 
 static void lv_vg_init(lv_context * ctx, const lv_vg_ops *ops, void *arg);
 static void lv_vg_destory(lv_context * ctx);

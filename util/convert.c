@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 #include "matio.h"
-#include "ephembra.h"
+#include "lv_ephem.h"
 
 #define VA_ARGS(...) , ##__VA_ARGS__
 #define ephem_error(fmt, ...) \

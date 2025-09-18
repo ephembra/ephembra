@@ -1,6 +1,4 @@
 /*
- * ephembra is a tiny ephemeris library for the JPL DE440 Ephemeris
- *
  * Copyright (c) 2025 Michael Clark <michaeljclark@mac.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -16,7 +14,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "demodata.h"
+#include <stddef.h>
+
+#include "lv_ephem.h"
+#include "lv_data.h"
 
 #define countof(arr) (sizeof(arr)/sizeof(arr[0]))
 

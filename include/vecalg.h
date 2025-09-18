@@ -1,6 +1,4 @@
 /*
- * ephembra is a tiny ephemeris library for the JPL DE440 Ephemeris
- *
  * Copyright (c) 2025 Michael Clark <michaeljclark@mac.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -24,20 +22,6 @@ extern "C" {
 
 #include <math.h>
 #include <float.h>
-
-#include "linmath.h"
-#include "gl2_util.h"
-#include "lv_model.h"
-
-#define countof(arr) (sizeof(arr)/sizeof(arr[0]))
-
-typedef struct lv_date lv_date;
-
-struct lv_date
-{
-    int year, month, day;
-    int hour, minute, second;
-};
 
 /*
  * math functions
@@ -141,60 +125,6 @@ static inline void vec3_project_to_basis(vec3 r, vec3 p0, vec3 x0, vec3 y0)
     vec3_scale(y1, y0, cy);
     vec3_add(r, x1, y1);
 }
-
-/*
- * object space screen space projection
- */
-
-void object_to_screen(vec3 r, vec3 p, mat4x4 matrix, int w, int h);
-
-void screen_to_object(vec3 r, vec3 p, mat4x4 invmatrix, int w, int h);
-
-/*
- * date functions
- */
-
-double lv_date_to_julian(lv_date d);
-
-lv_date lv_julian_to_date(double jd);
-
-int lv_days_in_month(int year, int month);
-
-size_t lv_format_date(char *buf, size_t buflen, lv_date *d);
-
-/*
- * astronomical functions
- */
-
-/* Convert arcseconds to radians */
-#define ASEC2RAD (M_PI / (180.0 * 3600.0))
-
-/* create precession rotation matrix (IAU 2006) for julian date */
-void lv_iau2006_precession_matrix(mat4x4 R, double jd);
-
-/* mean obliquity of the ecliptic at J2000 (in radians) */
-#define EPS0_MEAN_OBLIQ_J2000 (84381.406 * ASEC2RAD)
-
-/* mean obliquity of date IAU 2006/2000A series */
-double lv_iau2006_obliquity_eps(double jd);
-
-void lv_iau2006_obliquity_matrix(mat4x4 R, double jd);
-
-void lv_iau2006_obliquity_basis(vec3 x0, vec3 y0, vec3 z0, double jd);
-
-void lv_iau2006_combined_matrix(mat4x4 R, double jd);
-
-void lv_iau2006_combined_basis(vec3 x0, vec3 y0, vec3 z0, double jd);
-
-/*
- * color functions
- */
-
-lv_color lv_rgb_to_hsv(lv_color c);
-
-lv_color lv_hsv_to_rgb(lv_color c);
-
-lv_color lv_color_adjust(lv_color c, float t_bright, float t_saturate);
 
 #ifdef __cplusplus
 }

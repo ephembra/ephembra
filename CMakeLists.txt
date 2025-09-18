@@ -161,7 +161,15 @@ add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD)
 add_library(imgui STATIC ${IMGUI_SOURCES})
 
 include_directories(include)
-add_library(ephembra lib/ephembra.c ${ephembra_data_file})
+add_library(ephembra
+  lib/color.c
+  lib/data.c
+  lib/date.c
+  lib/ephem.c
+  lib/iau2006.c
+  lib/osutil.c
+  lib/screen.c
+  ${ephembra_data_file})
 
 add_executable(demo util/demo.c)
 target_link_libraries(demo PRIVATE ephembra)
@@ -199,9 +207,6 @@ list(PREPEND GLFW_LIBS_ALL z matio ephembra nanovg imgui)
 add_executable(gldemo
     src/glui.cc
     src/gldemo.c
-    src/demodata.c
-    src/demolib.c
-    src/osutil.c
     src/stb_image.c
     src/nanovg_gles3.c)
 gl_cprogram(gldemo)

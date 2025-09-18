@@ -1,6 +1,4 @@
 /*
- * ephembra is a tiny ephemeris library for the JPL DE440 Ephemeris
- *
  * Copyright (c) 2025 Michael Clark <michaeljclark@mac.com>
  *
  * Permission to use, copy, modify, and distribute this software for any

@@ -54,17 +54,20 @@
 #include "stb_image_write.h"
 
 #include "linmath.h"
+#include "vecalg.h"
 #include "gl2_util.h"
-#include "ephembra.h"
 
+#include "lv_color.h"
 #include "lv_model.h"
 #include "lv_ops_nanovg.h"
 #include "lv_ops_buffer.h"
 #include "lv_ops_xform.h"
-
-#include "osutil.h"
-#include "demolib.h"
-#include "demodata.h"
+#include "lv_date.h"
+#include "lv_data.h"
+#include "lv_iau2006.h"
+#include "lv_osutil.h"
+#include "lv_screen.h"
+#include "lv_ephem.h"
 
 #include "gldemo.h"
 

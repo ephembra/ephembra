@@ -39,6 +39,8 @@
 #include <sys/sysctl.h>
 #endif
 
+#include "lv_osutil.h"
+
 /*
  * get zero-terminated executable path possibly with truncation
  *

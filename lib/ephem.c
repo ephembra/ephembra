@@ -1,6 +1,4 @@
 /*
- * ephembra is a tiny ephemeris library for the JPL DE440 Ephemeris
- *
  * Copyright (c) 2025 Michael Clark <michaeljclark@mac.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -21,7 +19,7 @@
 #include <stddef.h>
 #include <math.h>
 
-#include "ephembra.h"
+#include "lv_ephem.h"
 
 #define VA_ARGS(...) , ##__VA_ARGS__
 #define ephem_error(fmt, ...) \
