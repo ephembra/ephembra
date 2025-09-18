@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include "nanovg.h"
+#define NANOVG_GL3
+
 #ifdef __cplusplus
 extern "C" {
 #endif

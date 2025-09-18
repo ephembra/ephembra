@@ -11,13 +11,13 @@
 #endif
 
 #include "linmath.h"
-#include "vecalg.h"
 
 #include "lv_data.h"
 #include "lv_date.h"
 #include "lv_iau2006.h"
 #include "lv_ephem.h"
 #include "lv_osutil.h"
+#include "lv_vecalg.h"
 
 static const char* ephem_bin = "resources/data/DE440Coeff.bin";
 

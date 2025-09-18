@@ -16,16 +16,12 @@
 
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <math.h>
 #include <float.h>
 
-/*
- * math functions
- */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 static inline float deg_rad(float a) { return a * (float)M_PI / 180.0f; }
 
@@ -47,35 +43,6 @@ static inline float mod_2pi(float x)
     float m = fmodf(x, 2.0f * (float)M_PI);
     return (m < 0.0f) ? m + 2.0f * (float)M_PI : m;
 }
-
-/*
- * point within circle angular map
- *
- * map angles from a point (x0, y0) inside of a circle of radius 'r'
- * relative to origin (r, r) to points on the circle circumference.
- *
- *  • θ (theta): angle relative to circle center [0, 2π).
- *  • φ (phi): angle from (x0,y0) toward boundary [0, 2π).
- *
- * domain: |(x0,y0)| < r, r > 0, results normalized to [0, 2π)
- *
- * forward: θ → φ:   phi = atan2(r*sinθ - y0, r*cosθ - x0)
- * inverse: φ → θ:   theta = phi + arcsin((y0*cosφ - x0*sinφ)/r)
- */
-
-static inline float angle_circle_to_point(float a, float x0, float y0, float r)
-{
-    return atan2f(r * sinf(a) - y0, r * cosf(a) - x0);
-}
-
-static inline float angle_point_to_circle(float a, float x0, float y0, float r)
-{
-    return (a + asinf((y0 * cosf(a) - x0 * sinf(a)) / r));
-}
-
-/*
- * vector functions
- */
 
 static inline void vec3_double3(vec3 r, double p[3])
 {
@@ -122,7 +89,6 @@ static inline float vec2_dist_point_line(vec2 p, vec2 a, vec2 b)
     return sqrtf(dcx * dcx + dcy * dcy);
 }
 
-/* project point p0 onto plane defined by orthonormal basis in x0, y0 */
 static inline void vec3_project_to_basis(vec3 r, vec3 p0, vec3 x0, vec3 y0)
 {
     vec3 x1, y1;

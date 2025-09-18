@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include "lv_color.h"
+#include "lv_opengl.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -44,24 +47,9 @@ static lv_log_level lv_ll = lv_ll_info;
 #define lv_info(...)  if (lv_ll <= lv_ll_info) printf(__VA_ARGS__);
 #define lv_error(...)  if (lv_ll <= lv_ll_error) printf(__VA_ARGS__);
 
-/* command */
-
-#define lv_cmd_arg0(n)       (0)
-#define lv_cmd_arg1(n,a)     (a)
-#define lv_cmd_arg2(n,a,b)   (a | (b << 16))
-#define lv_cmd_arg3(n,a,b,c) (a | (b << 16) | (c << 24))
-
 #define lv_min(a,b) (((a)<(b))?(a):(b))
 #define lv_max(a,b) (((a)>(b))?(a):(b))
 #define lv_sign(val) ((0 < val) - (val < 0))
-
-#define LV_ARGS_NARGS_X(a,b,c,d,e,f,g,h,n,...) n
-#define LV_ARGS_NARGS(...) LV_ARGS_NARGS_X(__VA_ARGS__,7,6,5,4,3,2,1,0,)
-#define LV_ARGS_CONCAT_X(a,b) a##b
-#define LV_ARGS_CONCAT(a,b) LV_ARGS_CONCAT_X(a,b)
-#define LV_ARGS_DISP(b,...) LV_ARGS_CONCAT(b,LV_ARGS_NARGS(__VA_ARGS__))(__VA_ARGS__)
-
-#define lv_args(...) LV_ARGS_DISP(lv_cmd_arg,__VA_ARGS__)
 
 struct lv_paint {
         float xform[6];
@@ -144,124 +132,6 @@ enum {
     lv_arg_color,
     lv_arg_paint,
     lv_arg_string,
-};
-
-static const int lv_cmd_args[] = {
-    /* common */
-    /* [lv_cmd_begin_frame]     = */ lv_args(lv_arg_float, lv_arg_float, lv_arg_float),
-    /* [lv_cmd_end_frame]       = */ lv_args(),
-    /* [lv_cmd_push]            = */ lv_args(),
-    /* [lv_cmd_pop]             = */ lv_args(),
-    /* [lv_cmd_reset]           = */ lv_args(),
-    /* [lv_cmd_fill_color]      = */ lv_args(lv_arg_color),
-    /* [lv_cmd_fill_paint]      = */ lv_args(lv_arg_paint),
-    /* [lv_cmd_fill]            = */ lv_args(),
-    /* [lv_cmd_stroke_color]    = */ lv_args(lv_arg_color),
-    /* [lv_cmd_stroke_paint]    = */ lv_args(lv_arg_paint),
-    /* [lv_cmd_stroke_width]    = */ lv_args(lv_arg_float),
-    /* [lv_cmd_stroke]          = */ lv_args(),
-    /* [lv_cmd_begin_path]      = */ lv_args(),
-    /* [lv_cmd_close_path]      = */ lv_args(),
-    /* [lv_cmd_path_winding]    = */ lv_args(lv_arg_int),
-    /* [lv_cmd_miter_limit]     = */ lv_args(lv_arg_float),
-    /* [lv_cmd_line_cap]        = */ lv_args(lv_arg_int),
-    /* [lv_cmd_line_join]       = */ lv_args(lv_arg_int),
-
-    /* 2d commands */
-    /* [lv_cmd_2d_translate]    = */ lv_args(lv_arg_vec2),
-    /* [lv_cmd_2d_rotate]       = */ lv_args(lv_arg_float),
-    /* [lv_cmd_2d_skew_x]       = */ lv_args(lv_arg_float),
-    /* [lv_cmd_2d_skew_y]       = */ lv_args(lv_arg_float),
-    /* [lv_cmd_2d_scale]        = */ lv_args(lv_arg_vec2),
-    /* [lv_cmd_2d_move_to]      = */ lv_args(lv_arg_vec2),
-    /* [lv_cmd_2d_line_to]      = */ lv_args(lv_arg_vec2),
-    /* [lv_cmd_2d_quadratic_to] = */ lv_args(lv_arg_vec2, lv_arg_vec2),
-    /* [lv_cmd_2d_bezier_to]    = */ lv_args(lv_arg_vec2, lv_arg_vec2, lv_arg_vec2),
-    /* [lv_cmd_2d_arc_to]       = */ lv_args(lv_arg_vec2, lv_arg_vec2, lv_arg_float),
-    /* [lv_cmd_2d_arc]          = */ lv_args(lv_arg_vec2, lv_arg_float, lv_arg_vec2, lv_arg_int),
-    /* [lv_cmd_2d_rect]         = */ lv_args(lv_arg_vec2, lv_arg_vec2),
-    /* [lv_cmd_2d_rounded_rect] = */ lv_args(lv_arg_vec2, lv_arg_vec2, lv_arg_float),
-    /* [lv_cmd_2d_ellipse]      = */ lv_args(lv_arg_vec2, lv_arg_vec2),
-    /* [lv_cmd_2d_circle]       = */ lv_args(lv_arg_vec2, lv_arg_float),
-
-    /* text commands */
-    /* [lv_cmd_2d_text_font]    = */ lv_args(lv_arg_string),
-    /* [lv_cmd_2d_text_size]    = */ lv_args(lv_arg_float),
-    /* [lv_cmd_2d_text_leading] = */ lv_args(lv_arg_float),
-    /* [lv_cmd_2d_text_tracking]= */ lv_args(lv_arg_float),
-    /* [lv_cmd_2d_text_blur]    = */ lv_args(lv_arg_float),
-    /* [lv_cmd_2d_text_align]   = */ lv_args(lv_arg_int),
-    /* [lv_cmd_2d_text_bounds]  = */ lv_args(lv_arg_string),
-    /* [lv_cmd_2d_text_draw]    = */ lv_args(lv_arg_vec2, lv_arg_string),
-
-    /* 3d commands */
-    /* [lv_cmd_3d_transform]    = */ lv_args(lv_arg_mat4x4),
-    /* [lv_cmd_3d_translate]    = */ lv_args(lv_arg_vec3),
-    /* [lv_cmd_3d_rotate]       = */ lv_args(lv_arg_vec3, lv_arg_float),
-    /* [lv_cmd_3d_scale]        = */ lv_args(lv_arg_vec3),
-    /* [lv_cmd_3d_move_to]      = */ lv_args(lv_arg_vec3),
-    /* [lv_cmd_3d_line_to]      = */ lv_args(lv_arg_vec3),
-    /* [lv_cmd_3d_quadratic_to] = */ lv_args(lv_arg_vec3, lv_arg_vec3),
-    /* [lv_cmd_3d_bezier_to]    = */ lv_args(lv_arg_vec3, lv_arg_vec3, lv_arg_vec3),
-};
-
-static const char* lv_cmd_names[] = {
-    /* common */
-    /* [lv_cmd_begin_frame]     = */ "begin_frame",
-    /* [lv_cmd_end_frame]       = */ "end_frame",
-    /* [lv_cmd_push]            = */ "push",
-    /* [lv_cmd_pop]             = */ "pop",
-    /* [lv_cmd_reset]           = */ "reset",
-    /* [lv_cmd_fill_color]      = */ "fill_color",
-    /* [lv_cmd_fill_paint]      = */ "fill_paint",
-    /* [lv_cmd_fill]            = */ "fill",
-    /* [lv_cmd_stroke_color]    = */ "stroke_color",
-    /* [lv_cmd_stroke_paint]    = */ "stroke_paint",
-    /* [lv_cmd_stroke_width]    = */ "stroke_width",
-    /* [lv_cmd_stroke]          = */ "stroke",
-    /* [lv_cmd_begin_path]      = */ "begin_path",
-    /* [lv_cmd_close_path]      = */ "close_path",
-    /* [lv_cmd_path_winding]    = */ "path_winding",
-    /* [lv_cmd_miter_limit]     = */ "miter_limit",
-    /* [lv_cmd_line_cap]        = */ "line_cap",
-    /* [lv_cmd_line_join]       = */ "line_join",
-
-    /* 2d commands */
-    /* [lv_cmd_2d_translate]    = */ "2d_translate",
-    /* [lv_cmd_2d_rotate]       = */ "2d_rotate",
-    /* [lv_cmd_2d_skew_x]       = */ "2d_skew_x",
-    /* [lv_cmd_2d_skew_y]       = */ "2d_skew_y",
-    /* [lv_cmd_2d_scale]        = */ "2d_scale",
-    /* [lv_cmd_2d_move_to]      = */ "2d_move_to",
-    /* [lv_cmd_2d_line_to]      = */ "2d_line_to",
-    /* [lv_cmd_2d_quadratic_to] = */ "2d_quadratic_to",
-    /* [lv_cmd_2d_bezier_to]    = */ "2d_bezier_to",
-    /* [lv_cmd_2d_arc_to]       = */ "2d_arc_to",
-    /* [lv_cmd_2d_arc]          = */ "2d_arc",
-    /* [lv_cmd_2d_rect]         = */ "2d_rect",
-    /* [lv_cmd_2d_rounded_rect] = */ "2d_rounded_rect",
-    /* [lv_cmd_2d_ellipse]      = */ "2d_ellipse",
-    /* [lv_cmd_2d_circle]       = */ "2d_circle",
-
-    /* text commands */
-    /* [lv_cmd_2d_text_font]    = */ "2d_text_font",
-    /* [lv_cmd_2d_text_size]    = */ "2d_text_size",
-    /* [lv_cmd_2d_text_leading] = */ "2d_text_leading",
-    /* [lv_cmd_2d_text_tracking]= */ "2d_text_tracking",
-    /* [lv_cmd_2d_text_blur]    = */ "2d_text_blur",
-    /* [lv_cmd_2d_text_align]   = */ "2d_text_align",
-    /* [lv_cmd_2d_text_bounds]  = */ "2d_text_bounds",
-    /* [lv_cmd_2d_text_draw]    = */ "2d_text_draw",
-
-    /* 3d commands */
-    /* [lv_cmd_3d_transform]    = */ "3d_transform",
-    /* [lv_cmd_3d_translate]    = */ "3d_translate",
-    /* [lv_cmd_3d_rotate]       = */ "3d_rotate",
-    /* [lv_cmd_3d_scale]        = */ "3d_scale",
-    /* [lv_cmd_3d_move_to]      = */ "3d_move_to",
-    /* [lv_cmd_3d_line_to]      = */ "3d_line_to",
-    /* [lv_cmd_3d_quadratic_to] = */ "3d_quadratic_to",
-    /* [lv_cmd_3d_bezier_to]    = */ "3d_bezier_to",
 };
 
 enum {
@@ -777,6 +647,10 @@ static void lv_vg_3d_bezier_to(lv_context * ctx, vec3f c0, vec3f c1, vec3f p0)
 {
     ctx->ops->_3d_bezier_to(ctx, c0, c1, p0);
 }
+
+#include "lv_vg_nanovg.h"
+#include "lv_vg_buffer.h"
+#include "lv_vg_xform.h"
 
 #ifdef __cplusplus
 }
