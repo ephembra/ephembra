@@ -36,6 +36,8 @@ int lv_days_in_month(int year, int month);
 
 size_t lv_format_date(char *buf, size_t buflen, lv_date *d);
 
+lv_date lv_date_time_now();
+
 #ifdef __cplusplus
 }
 #endif

@@ -147,16 +147,7 @@ static void lv_date_to_slider(lv_app *app)
 
 static void lv_current_date(lv_app *app)
 {
-    time_t t = time(NULL);
-    struct tm *tm = gmtime(&t);
-    lv_date d = {
-        tm->tm_year + 1900,
-        tm->tm_mon + 1,
-        tm->tm_mday,
-        tm->tm_hour,
-        tm->tm_min,
-        tm->tm_sec
-    };
+    lv_date d = lv_date_time_now();
     double njd = lv_date_to_julian(d);
     if (app->jd != njd) {
         app->jd = njd;

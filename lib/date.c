@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include <stddef.h>
+#include <time.h>
 #include <math.h>
 
 #include "lv_date.h"
@@ -152,4 +153,19 @@ size_t lv_format_date(char *buf, size_t buflen, lv_date *d)
     return snprintf(buf, buflen, "%02d %3s %04d %02d:%02d:%02d GMT",
         d->day, month_names[d->month-1], d->year,
         d->hour, d->minute, d->second);
+}
+
+lv_date lv_date_time_now()
+{
+    time_t t = time(NULL);
+    struct tm *tm = gmtime(&t);
+    lv_date d = {
+        tm->tm_year + 1900,
+        tm->tm_mon + 1,
+        tm->tm_mday,
+        tm->tm_hour,
+        tm->tm_min,
+        tm->tm_sec
+    };
+    return d;
 }
