@@ -245,7 +245,7 @@ void lv_iau2006_dynamic_basis(lv_app *app, vec3 x0, vec3 y0, vec3 z0)
 
 static inline lv_color lv_idx_color(lv_app* app, size_t idx, float alpha)
 {
-    lv_color color = lv_color_af(lv_rgbf_array(data[idx].color), alpha);
+    lv_color color = lv_color_af(data[idx].color, alpha);
     if (data[idx].oid == app->rot_oid) {
         return lv_color_adjust(color, 1.5, 1.5);
     } else {

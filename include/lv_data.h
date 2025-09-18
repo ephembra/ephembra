@@ -16,6 +16,8 @@
 
 #include <stddef.h>
 
+#include "lv_color.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,7 +34,7 @@ struct lv_oid
     double dist;        /* average semi-major axis (km) */
     double diameter;    /* mean diameter (km) */
     double orbit;       /* sidereal orbit period (days) */
-    float color[4];     /* orbital trail color (RGBA, 0-1) */
+    lv_color color;     /* orbital trail color (RGBA, 0-1) */
 };
 
 struct lv_oid_idx
@@ -45,7 +47,7 @@ struct lv_sign
 {
     const char *symbol;
     const char *name;
-    float color[4];
+    lv_color color;
 };
 
 extern lv_oid data[];
