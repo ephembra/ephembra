@@ -77,6 +77,13 @@ static inline float angle_point_to_circle(float a, float x0, float y0, float r)
  * vector functions
  */
 
+static inline void vec3_double3(vec3 r, double p[3])
+{
+    r[0] = (float)p[0];
+    r[1] = (float)p[1];
+    r[2] = (float)p[2];
+}
+
 static inline void vec4_vec3_w1(vec4 r, vec3 p)
 {
     r[0] = p[0];

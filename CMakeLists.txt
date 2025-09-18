@@ -177,6 +177,9 @@ target_link_libraries(demo PRIVATE ephembra)
 add_executable(convert util/convert.c)
 target_link_libraries(convert PRIVATE z matio ephembra)
 
+add_executable(search util/search.c)
+target_link_libraries(search PRIVATE ephembra ${EXTRA_LIBS})
+
 set(gldemo_fonts
   resources/fonts/fontawesome-webfont.ttf
   resources/fonts/DejaVuSans.ttf
