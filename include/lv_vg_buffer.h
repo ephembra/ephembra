@@ -464,7 +464,7 @@ static void lv_buffer_vg_3d_transform(lv_context * ctx, mat4x4 m0)
     lv_buffer_vg_context *priv = (lv_buffer_vg_context*)ctx->priv;
     uint cmd[] = { lv_cmd_3d_transform };
     array_buffer_append(&priv->buf, cmd);
-    array_buffer_append_impl(&priv->buf, &m0, 16);
+    array_buffer_append_impl(&priv->buf, m0, 16);
 }
 
 static void lv_buffer_vg_3d_translate(lv_context * ctx, vec3f v0)
