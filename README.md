@@ -147,9 +147,17 @@ to the equator.
 **Obliquity**
 the tilt of Earth’s axis relative to its orbital plane (≈23.4°).
 
+**Declination**
+The angular distance of a celestial object north or south of the
+celestial equator, which is defined by Earth’s axial tilt.
+
 **Precession**
 the slow shift of Earth’s rotational axis, causing the equinox points to
 drift along the ecliptic over thousands of years.
+
+**Right Ascension**
+a coordinate system used to track the drift of the vernal equinox,
+caused by the precession of Earth’s rotational axis.
 
 **Nutation**
 short-term oscillations in Earth’s axis, superimposed on precession.
