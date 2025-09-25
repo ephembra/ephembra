@@ -126,12 +126,14 @@ endmacro()
 # ephembra
 #
 
+find_package(Python COMPONENTS Interpreter REQUIRED)
+
 string(CONCAT ephembra_data_url
     "https://media.githubusercontent.com/media/ephembra/"
     "ephembra-data/refs/heads/trunk/data/DE440Coeff.bin")
 set(ephembra_data_file ${CMAKE_BINARY_DIR}/resources/data/DE440Coeff.bin)
 add_custom_command(OUTPUT ${ephembra_data_file}
-    COMMAND ${PROJECT_SOURCE_DIR}/scripts/fetch.py
+    COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/scripts/fetch.py
     ARGS ${ephembra_data_url} ${ephembra_data_file})
 
 set(MATIO_MAT73 OFF CACHE BOOL "Enable MATLAB 7.3 files" FORCE)
