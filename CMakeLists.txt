@@ -136,6 +136,7 @@ add_custom_command(OUTPUT ${ephembra_data_file}
     COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/scripts/fetch.py
     ARGS ${ephembra_data_url} ${ephembra_data_file})
 
+set(MATIO_SHARED OFF CACHE BOOL "")
 set(MATIO_MAT73 OFF CACHE BOOL "Enable MATLAB 7.3 files" FORCE)
 set(MATIO_WITH_HDF5 OFF CACHE BOOL "Enable HDF5 library" FORCE)
 add_subdirectory(third_party/matio)
