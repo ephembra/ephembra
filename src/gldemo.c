@@ -316,7 +316,8 @@ void lv_zodiac_3d(lv_app *app, lv_context* ctx)
     float f = global_scale * app->zodiac_offset;
     float g = global_scale * app->zodiac_scale;
     float s = lv_idx_scale(app->cartoon, lv_idx_for_oid(ephem_id_Earth));
-    vec3 x0, y0, z0, p0;
+    vec4 x0, y0, z0;
+    vec3 p0;
 
     lv_iau2006_dynamic_basis(app, x0, y0, z0);
     lv_ephem_object_shift_vec3(app, ephem_id_Earth, 0, p0, z0, f, s);
@@ -339,8 +340,6 @@ void lv_zodiac_3d(lv_app *app, lv_context* ctx)
         lv_vg_fill(ctx);
         lv_vg_stroke(ctx);
     }
-
-    lv_iau2006_dynamic_basis(app, x0, y0, z0);
 
     for (size_t idx = 0; idx < data_count; idx++)
     {
