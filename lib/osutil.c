@@ -20,14 +20,7 @@
 #include <limits.h>
 
 #ifdef _WIN32
-#define PATH_SEPARATOR '\\'
-#else
-#define PATH_SEPARATOR '/'
-#endif
-
-#ifdef _WIN32
 #include <windows.h>
-#define PATH_MAX 1024
 #elif __APPLE__
 #include <mach-o/dyld.h>
 #elif __linux__
@@ -39,6 +32,7 @@
 #include <sys/sysctl.h>
 #endif
 
+#include "lv_osdef.h"
 #include "lv_osutil.h"
 
 /*

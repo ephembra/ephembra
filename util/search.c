@@ -6,16 +6,13 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#ifdef _WIN32
-#define PATH_MAX 1024
-#endif
-
 #include "linmath.h"
 
 #include "lv_data.h"
 #include "lv_date.h"
 #include "lv_iau2006.h"
 #include "lv_ephem.h"
+#include "lv_osdef.h"
 #include "lv_osutil.h"
 #include "lv_vecalg.h"
 

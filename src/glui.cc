@@ -30,11 +30,6 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#ifdef _WIN32
-#include <malloc.h>
-#define PATH_MAX 1024
-#endif
-
 #ifdef HAVE_GLAD
 #include <glad/glad.h>
 #else
@@ -59,6 +54,7 @@
 #include "lv_ephem.h"
 #include "lv_iau2006.h"
 #include "lv_opengl.h"
+#include "lv_osdef.h"
 #include "lv_osutil.h"
 #include "lv_screen.h"
 #include "lv_vecalg.h"

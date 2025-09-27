@@ -16,10 +16,7 @@
 
 #pragma once
 
-#ifdef _WIN32
-#include <malloc.h>
-#define alloca _alloca
-#endif
+#include "lv_osdef.h"
 
 #ifdef __cplusplus
 extern "C" {

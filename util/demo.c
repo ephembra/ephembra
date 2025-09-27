@@ -3,11 +3,8 @@
 #include <string.h>
 #include <limits.h>
 
-#ifdef _WIN32
-#define PATH_MAX 1024
-#endif
-
 #include "lv_ephem.h"
+#include "lv_osdef.h"
 #include "lv_osutil.h"
 
 static const char* ephem_bin = "resources/data/DE440Coeff.bin";
