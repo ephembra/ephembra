@@ -112,7 +112,7 @@ void de440_destroy_ephem(ephem_ctx *ctx)
 
 static void de440_cheb3d(double jd, size_t n, double jd0, double jd1,
     const double* Cx, const double* Cy, const double* Cz,
-    double *r, float scale)
+    double *r, double scale)
 {
     double tau = 2*(jd - jd0)/(jd1 - jd0) - 1;
 
