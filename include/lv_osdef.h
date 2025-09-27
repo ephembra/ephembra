@@ -35,6 +35,14 @@
 #define alloca _alloca
 #endif
 
+#ifndef strdup
+#define strdup _strdup
+#endif
+
+#ifndef fileno
+#define fileno _fileno
+#endif
+
 #else
 
 #ifndef PATH_SEPARATOR

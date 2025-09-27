@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "lv_osdef.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -595,7 +597,8 @@ static void vertex_array_pointer(const char *attr, GLint size,
     GLuint val;
     if ((val = attr_list_value(&attrs, attr)) != ATTR_NOT_FOUND) {
         glEnableVertexAttribArray(val);
-        glVertexAttribPointer(val, size, type, norm, stride, (const void*)offset);
+        glVertexAttribPointer(val, size, type, norm, (GLsizei)stride,
+            (const void*)offset);
     }
 }
 
