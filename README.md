@@ -114,9 +114,6 @@ ephembra has been tested on the following operating systems:
 
 - Ubuntu 24.04 LTS
 - FreeBSD 14.3
-
-ephembra should work on the following operating systems:
-
 - Windows 11
 - macOS 15
 
