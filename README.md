@@ -27,10 +27,10 @@ planetary ephemeris.
 
 ephembra relies on coordinate transforms from several reference frames:
 
-- rest frame using the International Celestial Reference System.
+- equatorial frame using the International Celestial Reference System.
 - ecliptic frame using IAU 2006 obliquity and precession.
 
-### rest frame
+### equatorial frame
 
 the JPL DE440 ephemerides are expressed in the [International Celestial
 Reference System][ICRS], a quasi-inertial reference frame centered on
