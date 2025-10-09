@@ -88,11 +88,12 @@ extern const char* ephembra_mono_font;
 extern const char* ephembra_awes_font;
 extern const char* ephembra_image_tmpl;
 
-void lv_app_init(lv_app *app);
+void lv_app_init(lv_app *app, GLFWwindow *window);
+void lv_app_destroy(lv_app *app);
 void lv_vg_uinit(lv_app* app);
 void lv_vg_udestroy(lv_app* app);
 void lv_app_imgui_init(lv_app *app);
-void lv_app_imgui_destroy();
+void lv_app_imgui_destroy(lv_app *app);
 void lv_ephem_init(lv_app *app);
 void lv_ephem_destroy(lv_app *app);
 void lv_ephem_calc(lv_app *app, double jd);

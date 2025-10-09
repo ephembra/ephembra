@@ -83,9 +83,10 @@ static lv_color white = { 0.8157f, 0.8157f, 0.8157f, 1.0f };
  * gldemo
  */
 
-void lv_app_init(lv_app *app)
+void lv_app_init(lv_app *app, GLFWwindow *window)
 {
     memset(app, 0, sizeof(lv_app));
+    app->window = window;
     app->zoom = 19.0f;
     app->rot[0] = 65.0f;
     app->rot_oid = -1;
@@ -121,6 +122,17 @@ void lv_app_init(lv_app *app)
     app->symbol_offset = -0.05f;
     app->zodiac_offset = 0.556f;
     app->zodiac_scale = 9.0f;
+
+    lv_app_imgui_init(app);
+    lv_vg_uinit(app);
+    lv_ephem_init(app);
+}
+
+void lv_app_destroy(lv_app *app)
+{
+    lv_ephem_destroy(app);
+    lv_vg_udestroy(app);
+    lv_app_imgui_destroy(app);
 }
 
 static void lv_date_to_slider(lv_app *app)
@@ -931,9 +943,7 @@ void lv_app_main(int argc, char **argv)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
 
-    lv_app_init(&app);
-
-    app.window = window = glfwCreateWindow(opt_width, opt_height,
+    window = glfwCreateWindow(opt_width, opt_height,
         "ephembra", NULL, NULL);
     if (!window) {
         lv_panic("glfwCreateWindow failed\n");
@@ -949,21 +959,15 @@ void lv_app_main(int argc, char **argv)
     glfwSwapInterval(0);
     glfwSetTime(0);
 
-    lv_app_imgui_init(&app);
-
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
     glClearColor(0.f, 0.f, 0.f, 1.f);
 
-    lv_vg_uinit(&app);
-    lv_ephem_init(&app);
+    lv_app_init(&app, window);
     lv_main_loop(window, &app);
-    lv_ephem_destroy(&app);
-    lv_vg_udestroy(&app);
-
-    lv_app_imgui_destroy();
+    lv_app_destroy(&app);
 
     glfwTerminate();
 }

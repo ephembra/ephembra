@@ -138,7 +138,7 @@ void lv_app_imgui_init(lv_app *app)
     io.FontGlobalScale = app->ui_scale;
 }
 
-void lv_app_imgui_destroy()
+void lv_app_imgui_destroy(lv_app *app)
 {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
