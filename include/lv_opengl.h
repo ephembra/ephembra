@@ -164,10 +164,10 @@ static void array_buffer_resize(array_buffer *sb, size_t required)
 
 static uint array_buffer_add(array_buffer *sb, void *data)
 {
-    uint idx = (uint)sb->count;
+    size_t idx = sb->count;
     array_buffer_resize(sb, idx + 1);
     memcpy(sb->data + (idx * sb->stride), data, sb->stride);
-    return idx;
+    return (uint)idx;
 }
 
 static void vertex_buffer_init(vertex_buffer *vb)
