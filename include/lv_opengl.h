@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include "lv_osdef.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
