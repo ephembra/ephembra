@@ -47,13 +47,13 @@
 #include "stb_image_write.h"
 
 #include "linmath.h"
+#include "gl2_nano.h"
 
 #include "lv_color.h"
 #include "lv_date.h"
 #include "lv_data.h"
 #include "lv_ephem.h"
 #include "lv_iau2006.h"
-#include "lv_opengl.h"
 #include "lv_osdef.h"
 #include "lv_osutil.h"
 #include "lv_screen.h"

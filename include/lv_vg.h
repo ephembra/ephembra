@@ -16,8 +16,8 @@
 
 #pragma once
 
+#include "gl2_nano.h"
 #include "lv_color.h"
-#include "lv_opengl.h"
 
 #ifdef __cplusplus
 extern "C" {
