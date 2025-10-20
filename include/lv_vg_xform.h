@@ -357,6 +357,7 @@ static void lv_xform_vg_2d_rect(lv_context* ctx, vec2f p0, vec2f s0)
     vec2f b = { p0.x, p0.y + s0.y };
     vec2f c = { p0.x + s0.x, p0.y + s0.y };
     vec2f d = { p0.x + s0.x, p0.y };
+    lv_xform_vg_begin_path(ctx);
     lv_xform_vg_2d_move_to(ctx, a);
     lv_xform_vg_2d_line_to(ctx, b);
     lv_xform_vg_2d_line_to(ctx, c);
@@ -390,6 +391,7 @@ static void lv_xform_vg_2d_rounded_rect(lv_context* ctx, vec2f p0, vec2f s0, flo
     vec2f q = { p0.x + r.x * j, p0.y, };
     vec2f s = { p0.x, p0.y + r.y * j };
     vec2f t = { p0.x, p0.y + r.y };
+    lv_xform_vg_begin_path(ctx);
     lv_xform_vg_2d_move_to  (ctx, a);
     lv_xform_vg_2d_line_to  (ctx, b);
     lv_xform_vg_2d_bezier_to(ctx, c, d, e);
@@ -422,6 +424,7 @@ static void lv_xform_vg_2d_ellipse(lv_context * ctx, vec2f c0, vec2f r0)
     vec2f m = { c0.x-r0.x * k, c0.y-r0.y };
     vec2f n = { c0.x-r0.x, c0.y-r0.y * k };
     vec2f o = { c0.x-r0.x, c0.y };
+    lv_xform_vg_begin_path(ctx);
     lv_xform_vg_2d_move_to  (ctx, a);
     lv_xform_vg_2d_bezier_to(ctx, b, c, d);
     lv_xform_vg_2d_bezier_to(ctx, e, f, g);
