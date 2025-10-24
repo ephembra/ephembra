@@ -24,10 +24,8 @@ struct lv_color {
         union {
                 float rgba[4];
                 float hsva[4];
-                struct {
-                        float r,g,b,a;
-                        float h,s,v;
-                };
+                struct { float r,g,b,a; };
+                struct { float h,s,v; };
         };
 };
 typedef struct lv_color lv_color;
