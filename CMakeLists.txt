@@ -172,6 +172,7 @@ add_library(ephembra
   lib/iau2006.c
   lib/osutil.c
   lib/screen.c
+  lib/targa.c
   ${ephembra_data_file})
 
 add_executable(demo util/demo.c)
@@ -213,6 +214,5 @@ list(PREPEND GLFW_LIBS_ALL z matio ephembra nanovg imgui)
 add_executable(gldemo
     src/glui.cc
     src/gldemo.c
-    src/stb_image.c
     src/nanovg_gles3.c)
 gl_cprogram(gldemo)

@@ -45,8 +45,6 @@
 #include "nanovg_gl.h"
 #include "nanovg_gl_utils.h"
 
-#include "stb_image_write.h"
-
 #include "linmath.h"
 #include "gl2_nano.h"
 
@@ -58,6 +56,7 @@
 #include "lv_osdef.h"
 #include "lv_osutil.h"
 #include "lv_screen.h"
+#include "lv_targa.h"
 #include "lv_vecalg.h"
 #include "lv_vg.h"
 
@@ -577,6 +576,15 @@ static inline void model_matrix_transform(lv_app *app,
     mat4x4_invert(app->m_inv, app->m_mvp);
 }
 
+static void lv_save_screenshot(int w, int h, const char* filename)
+{
+    uchar* image = (uchar*)malloc(w*h*4);
+    if (image == NULL) return;
+    glReadPixels(0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, image);
+    lv_targa_write_bgra(filename, w, h, image, lv_targa_type_rgb_rle, 4, 3);
+    free(image);
+}
+
 void lv_render(lv_app* app, int w, int h, float r)
 {
     vec3 rot = { app->rot[0], app->rot[1], app->rot[2] };
@@ -689,43 +697,6 @@ static int mouse_find_oid(lv_app *app, vec2f pos,
     return 0;
 }
 
-static void image_set_alpha(uchar* image, int w, int h, int stride, uchar a)
-{
-    int x, y;
-    for (y = 0; y < h; y++) {
-        uchar* row = &image[y*stride];
-        for (x = 0; x < w; x++)
-            row[x*4+3] = a;
-    }
-}
-
-static void image_flip_horiz(uchar* image, int w, int h, int stride)
-{
-    int i = 0, j = h-1, k;
-    while (i < j) {
-        uchar* ri = &image[i * stride];
-        uchar* rj = &image[j * stride];
-        for (k = 0; k < w*4; k++) {
-            uchar t = ri[k];
-            ri[k] = rj[k];
-            rj[k] = t;
-        }
-        i++;
-        j--;
-    }
-}
-
-static void lv_save_screenshot(int w, int h, const char* filename)
-{
-    uchar* image = (uchar*)malloc(w*h*4);
-    if (image == NULL) return;
-    glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, image);
-    image_set_alpha(image, w, h, w*4, 255);
-    image_flip_horiz(image, w, h, w*4);
-    stbi_write_png(filename, w, h, 4, image, w*4);
-    free(image);
-}
-
 static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     NVG_NOTUSED(scancode);
@@ -750,7 +721,7 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
     case GLFW_KEY_P: {
         int fb_width, fb_height;
         glfwGetFramebufferSize(window, &fb_width, &fb_height);
-        lv_save_screenshot(fb_width, fb_height, "screenshot.png");
+        lv_save_screenshot(fb_width, fb_height, "screenshot.tga");
         break;
     }
     default: return;

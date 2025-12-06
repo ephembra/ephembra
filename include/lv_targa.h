@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 Michael Clark <michaeljclark@mac.com>
  *
- * Permission to use, copy, modify, and/or distribute this software for any
+ * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
  * copyright notice and this permission notice appear in all copies.
  *
@@ -16,39 +16,14 @@
 
 #pragma once
 
-#include <limits.h>
+enum {
+    lv_targa_type_rgb = 2,
+    lv_targa_type_gray = 3,
+    lv_targa_type_rgb_rle = 10,
+    lv_targa_type_gray_rle = 11,
+    lv_targa_flag_alpha = 8,
+    lv_targa_flag_vflip = 32
+};
 
-#ifdef _WIN32
-
-#include <malloc.h>
-#include <windows.h>
-
-#ifndef PATH_MAX
-#define PATH_MAX MAX_PATH
-#endif
-
-#ifndef PATH_SEPARATOR
-#define PATH_SEPARATOR '\\'
-#endif
-
-#ifndef alloca
-#define alloca _alloca
-#endif
-
-#ifndef strdup
-#define strdup _strdup
-#endif
-
-#ifndef fileno
-#define fileno _fileno
-#endif
-
-#else
-
-#include <alloca.h>
-
-#ifndef PATH_SEPARATOR
-#define PATH_SEPARATOR '/'
-#endif
-
-#endif
+int lv_targa_write_bgra(const char *filename, size_t w, size_t h, void *data,
+    int type, size_t in_stride, size_t out_stride);

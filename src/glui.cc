@@ -44,8 +44,6 @@
 #include "nanovg_gl.h"
 #include "nanovg_gl_utils.h"
 
-#include "stb_image_write.h"
-
 #include "linmath.h"
 #include "gl2_nano.h"
 

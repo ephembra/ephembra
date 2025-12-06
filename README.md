@@ -90,11 +90,10 @@ this introduces some rendering issues, described in [zodiac](doc/zodiac.md).
 
 ephembra requires the following dependencies:
 
-- submodules: [matio], [nanovg], [imgui], [stb]  
+- submodules: [matio], [nanovg], [imgui]
 - packages: [GLAD], [GLFW], [freetype], [zlib], [brotli], [bzip2], [libpng]
 
 [matio]: https://github.com/tbeu/matio
-[stb]: https://github.com/nothings/stb
 [nanovg]: https://github.com/memononen/nanovg
 [imgui]: https://github.com/ocornut/imgui
 [GLAD]: https://github.com/Dav1dde/glad
