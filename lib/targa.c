@@ -40,6 +40,8 @@ int lv_targa_write_bgra(const char *filename, size_t w, size_t h,
     uchar *p = (unsigned char *)data;
     uchar *buf = alloca(os * 128);
 
+    if (w > 65535 || h > 65535) return -1;
+
     memset(&H, 0, sizeof(H));
     H.type      = type;
     H.width_lo  = (uchar)((w)      & 0xff);
@@ -63,7 +65,7 @@ int lv_targa_write_bgra(const char *filename, size_t w, size_t h,
 
     if (!(f = fopen(filename, "wb"))) return -1;
 
-    fwrite(&H, 1, sizeof(H), f);
+    if (fwrite(&H, 1, sizeof(H), f) != sizeof(H)) goto err;
 
     switch (type) {
     case lv_targa_type_rgb_rle:
@@ -76,8 +78,8 @@ int lv_targa_write_bgra(const char *filename, size_t w, size_t h,
 
             if (l > 1) {
                 uchar header = 0x80 | (uchar)(l - 1);
-                fwrite(&header, 1, 1, f);
-                fwrite(p + i * is, os, 1, f);
+                if (fwrite(&header, 1, 1, f) != 1) goto err;
+                if (fwrite(p + i * is, os, 1, f) != 1) goto err;
                 i += l;
             } else {
                 while (i + l < pixels && l < 128 &&
@@ -88,8 +90,8 @@ int lv_targa_write_bgra(const char *filename, size_t w, size_t h,
                 }
 
                 uchar header = (uchar)(l - 1);
-                fwrite(&header, 1, 1, f);
-                fwrite(buf, os, l, f);
+                if (fwrite(&header, 1, 1, f) != 1) goto err;
+                if (fwrite(buf, os, l, f) != l) goto err;
                 i += l;
             }
         }
@@ -97,20 +99,23 @@ int lv_targa_write_bgra(const char *filename, size_t w, size_t h,
     case lv_targa_type_rgb:
     case lv_targa_type_gray:
         if (is == os) {
-            fwrite(p, os, pixels, f);
+            if (fwrite(p, os, pixels, f) != pixels) goto err;
         } else {
             for (size_t i = 0; i < pixels; i += 128) {
                 size_t l = pixels - i > 128 ? 128 : pixels - i;
                 for (size_t j = 0; j < l; j++) {
                     memcpy(buf + j * os, p + (i + j) * is, os);
                 }
-                fwrite(buf, os, l, f);
+                if (fwrite(buf, os, l, f) != l) goto err;
             }
         }
         break;
     }
 
     fclose(f);
-
     return 0;
+
+err:
+    fclose(f);
+    return -1;
 }
