@@ -67,6 +67,8 @@ const char* ephembra_sans_font = "resources/fonts/DejaVuSans.ttf";
 const char* ephembra_mono_font = "resources/fonts/DejaVuSansMono.ttf";
 const char* ephembra_awes_font = "resources/fonts/fontawesome-webfont.ttf";
 const char* ephembra_image_tmpl = "%s/resources/images/%s.png";
+const char* ephembra_video_dir = "tmp/video";
+const char* ephembra_video_tmpl = "%s/ephembra-%06d.tga";
 
 static const float min_zoom = 2.0f, max_zoom = 2048.0f;
 static const float global_scale = 1e12f;
@@ -101,6 +103,7 @@ void lv_app_init(lv_app *app, GLFWwindow *window)
     app->cjdf = 0;
     app->timedisp = 1;
     app->playback = 0;
+    app->record = 0;
     app->precession = 1;
     app->cartoon = 1;
     app->sym_legend = 1;
@@ -121,6 +124,8 @@ void lv_app_init(lv_app *app, GLFWwindow *window)
     app->symbol_offset = -0.05f;
     app->zodiac_offset = 0.556f;
     app->zodiac_scale = 9.0f;
+    app->frame_num = 0;
+    app->frame_stop = 3600;
 
     lv_app_imgui_init(app);
     lv_vg_uinit(app);
@@ -648,6 +653,28 @@ void lv_render(lv_app* app, int w, int h, float r)
     lv_vg_end_frame(ctx);
 }
 
+void lv_record(lv_app* app, int w, int h, float r)
+{
+    struct stat st;
+    int fb_width, fb_height;
+    char filename[PATH_MAX];
+    int frame;
+
+    if (!app->record || app->frame_num >= app->frame_stop) return;
+
+    if (stat(ephembra_video_dir, &st) != 0 || !(st.st_mode & S_IFDIR)) {
+        lv_error("error: directory does not exist: %s\n", ephembra_video_dir);
+        return;
+    }
+
+    snprintf(filename, sizeof(filename), ephembra_video_tmpl,
+             ephembra_video_dir, app->frame_num++);
+    glfwGetFramebufferSize(app->window, &fb_width, &fb_height);
+    lv_save_screenshot(fb_width, fb_height, filename);
+
+    if (app->frame_num >= app->frame_stop) app->record = 0;
+}
+
 static int mouse_find_oid(lv_app *app, vec2f pos,
     size_t *sel_oid, double *sel_tjd)
 {
@@ -724,6 +751,7 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
         lv_save_screenshot(fb_width, fb_height, "screenshot.tga");
         break;
     }
+    case GLFW_KEY_R: app->playback = app->record = !app->record; break;
     default: return;
     }
 }
@@ -820,6 +848,7 @@ static void lv_main_loop(GLFWwindow* window, lv_app *app)
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
         lv_render(app, win_width, win_height, win_ratio);
         lv_imgui(app, win_width, win_height, win_ratio);
+        lv_record(app, win_width, win_height, win_ratio);
         glfwSwapBuffers(window);
         glfwPollEvents();
 

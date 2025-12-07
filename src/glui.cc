@@ -295,11 +295,20 @@ void lv_imgui(lv_app* app, int w, int h, float r)
         app->playback = app->timedisp = 0;
     }
 
-    if (ImGui::Button(app->playback  ? u8"\uf04c##playback"
-                                     : u8"\uf04b##playback", ImVec2(36, 36))) {
-        app->playback = !app->playback;
+    ImGui::PushStyleColor(ImGuiCol_Text, app->record ?
+        IM_COL32(255, 0, 0, 255) : IM_COL32(255, 255, 255, 255));
+    if (ImGui::Button(app->playback ?
+        u8"\uf04c##playback" : u8"\uf04b##playback", ImVec2(36, 36)))
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.KeyShift) {
+            app->record = !app->record;
+        } else {
+            app->playback = !app->playback;
+        }
         if (app->playback) app->timedisp = 0;
     }
+    ImGui::PopStyleColor();
     ImGui::SameLine();
     ImGui::SetNextItemWidth(150.0f);
     if (ImGui::BeginCombo("##playstep", play_steps[app->play_step])) {
@@ -367,6 +376,10 @@ void lv_imgui(lv_app* app, int w, int h, float r)
     ImGui::SliderFloat("Symbol Offset", &app->symbol_offset, -0.1f, 0.1f);
     ImGui::SliderFloat("Zodiac Offset", &app->zodiac_offset, 0.0f, 20.0f);
     ImGui::SliderFloat("Zodiac Scale", &app->zodiac_scale, 0.0f, 20.0f);
+
+    ImGui::Text("Recording");
+    ImGui::SliderInt("Frame Number", &app->frame_num, 0, 9000);
+    ImGui::SliderInt("Frame Stop", &app->frame_stop, 0, 9000);
 
     ImGui::Text("Legends");
     ImGui::Separator();

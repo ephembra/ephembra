@@ -56,6 +56,7 @@ struct lv_app
     bool slider_valid;
     bool timedisp;
     bool playback;
+    bool record;
     bool precession;
     bool cartoon;
     bool sym_legend;
@@ -79,6 +80,8 @@ struct lv_app
     double *eph;
     int *images;
     int font;
+    int frame_num;
+    int frame_stop;
     ephem_ctx ctx;
 };
 
@@ -105,6 +108,7 @@ void lv_zodiac_2d(lv_app *app, lv_context* ctx, int w, int h);
 void lv_planets_3d(lv_app *app, lv_context* ctx);
 void lv_planets_2d(lv_app *app, lv_context* ctx, int w, int h);
 void lv_render(lv_app* app, int w, int h, float r);
+void lv_record(lv_app* app, int w, int h, float r);
 void lv_imgui(lv_app* app, int w, int h, float r);
 void lv_app_main(int argc, char **argv);
 
