@@ -46,9 +46,10 @@ January 1st, 2000 Terrestrial Time_.
 
 thus, while the ICRS is barycentric and not tied to Earth’s motion,
 its orientation remains close to Earth’s equator at J2000.0,
-making it a natural _"rest frame"_ for solar system ephemerides;
-the X-axis points to 0° Aries, the Y-axis points to 180° Libra,
-and the Z-axis points perpendicular to the equatorial plane (up).
+making it a natural _"rest frame"_ for solar system ephemerides; the
+X-axis points to 0° Aries, the Y-axis to 90° Cancer, the negative
+X-axis to 180° Libra, and the negative Y-axis to 270° Capricorn. the
+Z-axis points perpendicular to the equatorial plane (up).
 
 ### ecliptic frame
 
